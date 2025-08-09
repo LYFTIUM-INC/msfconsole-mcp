@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 # Import base functionality from existing stable integration
-from msfmcp.msf_stable_integration import MSFConsoleStableWrapper, OperationStatus, OperationResult
+from msfmcp.core.msf_stable_integration import MSFConsoleStableWrapper, OperationStatus, OperationResult
 
 # Set up logging
 logger = logging.getLogger(__name__)

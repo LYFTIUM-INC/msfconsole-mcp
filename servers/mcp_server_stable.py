@@ -20,11 +20,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # Also ensure repository root is on path to import sibling package `msfmcp`
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from msfmcp.msf_stable_integration import MSFConsoleStableWrapper, OperationStatus, OperationResult
-from msfmcp.msf_extended_tools import MSFExtendedTools, ExtendedOperationResult
-from msfmcp.msf_final_five_tools import MSFFinalFiveTools, FinalOperationResult
-from msfmcp.msf_ecosystem_tools import MSFEcosystemTools, EcosystemResult
-from msfmcp.msf_advanced_tools import MSFAdvancedTools, AdvancedResult
+from msfmcp.core.msf_stable_integration import MSFConsoleStableWrapper, OperationStatus, OperationResult
+from msfmcp.tools.msf_extended_tools import MSFExtendedTools, ExtendedOperationResult
+from msfmcp.tools.msf_final_five_tools import MSFFinalFiveTools, FinalOperationResult
+from msfmcp.tools.msf_ecosystem_tools import MSFEcosystemTools, EcosystemResult
+from msfmcp.tools.msf_advanced_tools import MSFAdvancedTools, AdvancedResult
 
 # Set up logging
 logging.basicConfig(
