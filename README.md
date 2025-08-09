@@ -36,14 +36,14 @@ pip3 install -r requirements.txt
 
 3. **Configure for Claude Code:**
 ```bash
-claude mcp add msfconsole-enhanced python3 msfconsole_mcp_enhanced.py
+claude mcp add msfconsole-enhanced python3 servers/msfconsole_mcp_enhanced.py
 ```
 
 ### Verification
 
 Test the installation:
 ```bash
-python3 -c "from msfconsole_mcp_enhanced import MSFConsoleMCPEnhanced; print('✅ Installation successful')"
+python3 -c "from servers.msfconsole_mcp_enhanced import MSFConsoleMCPEnhanced; print('✅ Installation successful')"
 ```
 
 ## 🛠️ Available Tools
@@ -73,7 +73,7 @@ Run the comprehensive test suite:
 python3 test_extended_server.py
 
 # Test specific tools
-python3 -c "import asyncio; from msfconsole_mcp_enhanced import *; print('All tests passed')"
+python3 -c "import asyncio; from servers.msfconsole_mcp_enhanced import *; print('All tests passed')"
 ```
 
 **Verified Performance:**

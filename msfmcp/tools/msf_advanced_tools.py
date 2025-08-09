@@ -34,8 +34,8 @@ import threading
 import base64
 
 # Import base functionality
-from msf_stable_integration import MSFConsoleStableWrapper, OperationStatus, OperationResult
-from msf_ecosystem_tools import EcosystemResult
+from msfmcp.core.msf_stable_integration import MSFConsoleStableWrapper, OperationStatus, OperationResult
+from msfmcp.tools.msf_ecosystem_tools import EcosystemResult
 
 # Set up logging
 logger = logging.getLogger(__name__)

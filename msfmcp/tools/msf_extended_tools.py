@@ -16,7 +16,7 @@ from enum import Enum
 import re
 
 # Import existing stable wrapper
-from msf_stable_integration import (
+from msfmcp.core.msf_stable_integration import (
     MSFConsoleStableWrapper, 
     OperationStatus, 
     OperationResult

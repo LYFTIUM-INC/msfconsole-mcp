@@ -874,7 +874,7 @@ async def resource_script_execution(ctx: Context, script_commands: List[str], wo
         }, indent=2)
 
 # Import improved parser
-from improved_msf_parser import ImprovedMSFParser, OutputType
+from msfmcp.parsers.improved_msf_parser import ImprovedMSFParser, OutputType
 
 # Initialize global parser
 msf_parser = ImprovedMSFParser()
