@@ -15,7 +15,11 @@ import os
 from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
 from pathlib import Path
-import psutil
+
+try:
+    import psutil  # type: ignore
+except Exception:  # pragma: no cover - optional dependency for process stats
+    psutil = None
 from enum import Enum
 
 logging.basicConfig(level=logging.INFO)
@@ -686,9 +690,11 @@ class MSFConsoleStableWrapper:
                 "avg_execution_time": avg_execution_time,
             },
             "system_resources": {
-                "cpu_percent": psutil.cpu_percent(),
-                "memory_percent": psutil.virtual_memory().percent,
-                "process_memory_mb": psutil.Process().memory_info().rss / 1024 / 1024,
+                "cpu_percent": psutil.cpu_percent() if psutil else "N/A",
+                "memory_percent": psutil.virtual_memory().percent if psutil else "N/A",
+                "process_memory_mb": (
+                    psutil.Process().memory_info().rss / 1024 / 1024 if psutil else "N/A"
+                ),
             },
             "stability_rating": self._calculate_stability_rating(),
         }

@@ -10,6 +10,7 @@ and full feature coverage of Metasploit Framework capabilities.
 import asyncio
 import logging
 import json
+import os
 import sys
 from typing import Optional
 
@@ -22,14 +23,36 @@ except ImportError as e:
     sys.stderr.write("Please install the MCP SDK: pip install mcp\n")
     sys.exit(1)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("msfconsole_mcp_enhanced.log"),
-        logging.StreamHandler(sys.stderr),
-    ],
-)
+# Logging configuration via env
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+LOG_FORMAT = os.getenv("LOG_FORMAT", "plain")  # plain|json
+
+if LOG_FORMAT == "json":
+
+    class JSONFormatter(logging.Formatter):
+        def format(self, record: logging.LogRecord) -> str:
+            payload = {
+                "time": self.formatTime(record, datefmt="%Y-%m-%dT%H:%M:%S%z"),
+                "level": record.levelname,
+                "name": record.name,
+                "message": record.getMessage(),
+            }
+            return json.dumps(payload)
+
+    formatter = JSONFormatter()
+    handlers = [logging.StreamHandler(sys.stderr)]
+    for h in handlers:
+        h.setFormatter(formatter)
+    logging.basicConfig(level=LOG_LEVEL, handlers=handlers)
+else:
+    logging.basicConfig(
+        level=LOG_LEVEL,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler("msfconsole_mcp_enhanced.log"),
+            logging.StreamHandler(sys.stderr),
+        ],
+    )
 logger = logging.getLogger(__name__)
 
 try:
@@ -88,12 +111,12 @@ async def ensure_initialized():
                 logger.warning("Security manager not available, using basic validation")
                 security_manager = None
             rpc_config = RPCConfig(
-                host="127.0.0.1",
-                port=55552,
-                username="msf",
-                password="msf123",
-                ssl=False,
-                timeout=30,
+                host=os.getenv("MSF_RPC_HOST", "127.0.0.1"),
+                port=int(os.getenv("MSF_RPC_PORT", "55552")),
+                username=os.getenv("MSF_RPC_USER", "msf"),
+                password=os.getenv("MSF_RPC_PASS", "msf123"),
+                ssl=os.getenv("MSF_RPC_SSL", "false").lower() == "true",
+                timeout=int(os.getenv("MSF_RPC_TIMEOUT", "30")),
             )
             dual_mode_handler = MSFDualModeHandler(rpc_config)
             init_result = await asyncio.wait_for(dual_mode_handler.initialize(), timeout=45)

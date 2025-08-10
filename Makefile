@@ -4,22 +4,25 @@ PIP ?= $(PY) -m pip
 .PHONY: setup lint format test cov pre-commit
 
 setup:
-	$(PIP) install -r requirements.txt || true
-	$(PIP) install -r dev-requirements.txt || true
+	python3 -m venv .venv && . .venv/bin/activate && pip install -r dev-requirements.txt -r requirements.txt
 
 lint:
 	ruff check .
-	black --check .
 
 format:
 	black .
-	ruff check . --fix
+
+typecheck:
+	mypy msf || true
+
+safety:
+	safety check -r requirements.txt || true
 
 test:
-	$(PY) -m pytest -q
+	pytest -q
 
 cov:
-	$(PY) -m pytest -q && cat coverage.xml | head -n 5
+	pytest -q --cov=msf --cov-report=term-missing:skip-covered --cov-report=xml
 
 pre-commit:
-	pre-commit install
+	ruff check . && black --check . && mypy msf || true && pytest -q

@@ -16,6 +16,34 @@ from .tools_final import ConsoleAdministrationTools, AdministrationToolResult
 from .tools_ecosystem import MetasploitEcosystemTools, EcosystemToolResult
 from .tools_advanced import EcosystemAdvancedTools, AdvancedToolResult
 
+# Deprecated aliases for backward compatibility
+import warnings as _warnings
+
+MSFExtendedTools = ConsoleExtendedTools  # deprecated
+MSFFinalFiveTools = ConsoleAdministrationTools  # deprecated
+MSFEcosystemTools = MetasploitEcosystemTools  # deprecated
+MSFAdvancedTools = EcosystemAdvancedTools  # deprecated
+ExtendedOperationResult = ExtendedToolResult  # deprecated
+FinalOperationResult = AdministrationToolResult  # deprecated
+EcosystemResult = EcosystemToolResult  # deprecated
+AdvancedResult = AdvancedToolResult  # deprecated
+
+for _name in [
+    ("MSFExtendedTools", "ConsoleExtendedTools"),
+    ("MSFFinalFiveTools", "ConsoleAdministrationTools"),
+    ("MSFEcosystemTools", "MetasploitEcosystemTools"),
+    ("MSFAdvancedTools", "EcosystemAdvancedTools"),
+    ("ExtendedOperationResult", "ExtendedToolResult"),
+    ("FinalOperationResult", "AdministrationToolResult"),
+    ("EcosystemResult", "EcosystemToolResult"),
+    ("AdvancedResult", "AdvancedToolResult"),
+]:
+    _warnings.warn(
+        f"{_name[0]} is deprecated; use {_name[1]} instead",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
 __all__ = [
     # parsing
     "MSFParser",
