@@ -3,8 +3,769 @@
 MSF Ecosystem Tools - Complete MSF Framework Integration
 """
 
+import asyncio
+import json
+import subprocess
+import time
 import logging
+import os
+import tempfile
+from typing import Dict, Any, List, Optional
+from dataclasses import dataclass
+from enum import Enum
+import hashlib
+
+from .core import MSFConsoleStableWrapper, OperationStatus, OperationResult
 
 logger = logging.getLogger(__name__)
 
-# TODO: Move full ecosystem tools implementation here.
+
+class VenomFormat(Enum):
+    ASP = "asp"
+    ASPX = "aspx"
+    ASPX_EXE = "aspx-exe"
+    DLL = "dll"
+    ELF = "elf"
+    ELF_SO = "elf-so"
+    EXE = "exe"
+    EXE_ONLY = "exe-only"
+    EXE_SERVICE = "exe-service"
+    EXE_SMALL = "exe-small"
+    MACHO = "macho"
+    MSI = "msi"
+    MSI_NOUAC = "msi-nouac"
+    WAR = "war"
+    HTA_PSH = "hta-psh"
+    LOOP_VBS = "loop-vbs"
+    OSX_APP = "osx-app"
+    PSH = "psh"
+    PSH_NET = "psh-net"
+    PSH_REFLECTION = "psh-reflection"
+    PSH_CMD = "psh-cmd"
+    VBA = "vba"
+    VBA_EXE = "vba-exe"
+    VBA_PSH = "vba-psh"
+    VBS = "vbs"
+    RAW = "raw"
+    HEX = "hex"
+    C = "c"
+    CSHARP = "csharp"
+    JAVA = "java"
+    JAVASCRIPT = "javascript"
+    PERL = "perl"
+    PYTHON = "python"
+    RUBY = "ruby"
+
+
+class DatabaseAction(Enum):
+    INIT = "init"
+    REINIT = "reinit"
+    DELETE = "delete"
+    START = "start"
+    STOP = "stop"
+    STATUS = "status"
+    RUN = "run"
+    BACKUP = "backup"
+    RESTORE = "restore"
+    QUERY = "query"
+    OPTIMIZE = "optimize"
+
+
+class RPCAction(Enum):
+    START = "start"
+    STOP = "stop"
+    STATUS = "status"
+    CALL = "call"
+    AUTH = "auth"
+    CONSOLE = "console"
+
+
+class ReportFormat(Enum):
+    HTML = "html"
+    PDF = "pdf"
+    CSV = "csv"
+    JSON = "json"
+    XML = "xml"
+    EXECUTIVE = "executive"
+
+
+class EvasionTechnique(Enum):
+    ENCODING = "encoding"
+    OBFUSCATION = "obfuscation"
+    POLYMORPHIC = "polymorphic"
+    PACKING = "packing"
+    ENCRYPTION = "encryption"
+    SHELLCODE_MUTATION = "mutation"
+
+
+@dataclass
+class EcosystemResult(OperationResult):
+    tool_name: Optional[str] = None
+    output_file: Optional[str] = None
+    artifacts: Optional[List[str]] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class MSFEcosystemTools(MSFConsoleStableWrapper):
+    def __init__(self):
+        super().__init__()
+        self.rpc_daemon = None
+        self.active_listeners = {}
+        self.report_templates = {}
+        self.evasion_profiles = {}
+
+    async def msf_venom_direct(
+        self,
+        payload: str,
+        format_type: str = "exe",
+        options: Optional[Dict[str, str]] = None,
+        encoders: Optional[List[str]] = None,
+        iterations: int = 1,
+        bad_chars: Optional[str] = None,
+        template: Optional[str] = None,
+        keep_template: bool = False,
+        smallest: bool = False,
+        nop_sled: int = 0,
+        output_file: Optional[str] = None,
+    ) -> EcosystemResult:
+        start_time = time.time()
+        try:
+            cmd = ["msfvenom", "-p", payload, "-f", format_type]
+            if options:
+                for key, value in options.items():
+                    cmd.append(f"{key}={value}")
+            if encoders:
+                for encoder in encoders:
+                    cmd.extend(["-e", encoder])
+            if iterations > 1:
+                cmd.extend(["-i", str(iterations)])
+            if bad_chars:
+                cmd.extend(["-b", bad_chars])
+            if template:
+                cmd.extend(["-x", template])
+                if keep_template:
+                    cmd.append("-k")
+            if smallest:
+                cmd.append("--smallest")
+            if nop_sled > 0:
+                cmd.extend(["-n", str(nop_sled)])
+            if not output_file:
+                suffix = f".{format_type}" if format_type in ["exe", "dll", "elf"] else ""
+                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                    output_file = tmp.name
+            cmd.extend(["-o", output_file])
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            if result.returncode == 0:
+                file_size = os.path.getsize(output_file) if os.path.exists(output_file) else 0
+                file_hash = (
+                    self._get_file_hash(output_file) if os.path.exists(output_file) else None
+                )
+                return EcosystemResult(
+                    status=OperationStatus.SUCCESS,
+                    data={
+                        "payload": payload,
+                        "format": format_type,
+                        "output_file": output_file,
+                        "file_size": file_size,
+                        "file_hash": file_hash,
+                        "command": " ".join(cmd),
+                        "stdout": result.stdout,
+                    },
+                    execution_time=time.time() - start_time,
+                    tool_name="msf_venom_direct",
+                    output_file=output_file,
+                    metadata={
+                        "encoders_used": encoders,
+                        "iterations": iterations,
+                        "template_used": template is not None,
+                    },
+                )
+            return EcosystemResult(
+                status=OperationStatus.FAILURE,
+                error=f"msfvenom failed: {result.stderr}",
+                execution_time=time.time() - start_time,
+                tool_name="msf_venom_direct",
+            )
+        except subprocess.TimeoutExpired:
+            return EcosystemResult(
+                status=OperationStatus.FAILURE,
+                error="msfvenom operation timed out",
+                execution_time=time.time() - start_time,
+                tool_name="msf_venom_direct",
+            )
+        except Exception as exc:  # noqa: BLE001 broad for tool boundary
+            logger.error("MSF Venom Direct error: %s", exc)
+            return EcosystemResult(
+                status=OperationStatus.FAILURE,
+                error=str(exc),
+                execution_time=time.time() - start_time,
+                tool_name="msf_venom_direct",
+            )
+
+    async def msf_database_direct(
+        self,
+        action: str,
+        database_path: Optional[str] = None,
+        connection_string: Optional[str] = None,
+        backup_file: Optional[str] = None,
+        sql_query: Optional[str] = None,
+        optimize_level: int = 1,
+    ) -> EcosystemResult:
+        start_time = time.time()
+        try:
+            try:
+                db_action = DatabaseAction(action)
+            except ValueError:
+                return EcosystemResult(
+                    status=OperationStatus.FAILURE,
+                    error=f"Invalid database action: {action}",
+                    execution_time=time.time() - start_time,
+                    tool_name="msf_database_direct",
+                )
+            cmd = ["msfdb"]
+            if db_action == DatabaseAction.INIT:
+                cmd.append("init")
+                if database_path:
+                    cmd.append(database_path)
+            elif db_action == DatabaseAction.REINIT:
+                cmd.append("reinit")
+            elif db_action == DatabaseAction.DELETE:
+                cmd.append("delete")
+            elif db_action == DatabaseAction.START:
+                cmd.append("start")
+            elif db_action == DatabaseAction.STOP:
+                cmd.append("stop")
+            elif db_action == DatabaseAction.STATUS:
+                cmd.append("status")
+            elif db_action == DatabaseAction.RUN:
+                cmd.append("run")
+            elif db_action == DatabaseAction.BACKUP:
+                if not backup_file:
+                    backup_file = f"msf_backup_{int(time.time())}.sql"
+                cmd = ["pg_dump", "-h", "localhost", "-U", "msf", "-d", "msf", "-f", backup_file]
+            elif db_action == DatabaseAction.RESTORE:
+                if not backup_file:
+                    return EcosystemResult(
+                        status=OperationStatus.FAILURE,
+                        error="Restore requires backup file",
+                        execution_time=time.time() - start_time,
+                        tool_name="msf_database_direct",
+                    )
+                cmd = ["psql", "-h", "localhost", "-U", "msf", "-d", "msf", "-f", backup_file]
+            elif db_action == DatabaseAction.QUERY:
+                if not sql_query:
+                    return EcosystemResult(
+                        status=OperationStatus.FAILURE,
+                        error="Query action requires SQL query",
+                        execution_time=time.time() - start_time,
+                        tool_name="msf_database_direct",
+                    )
+                cmd = ["psql", "-h", "localhost", "-U", "msf", "-d", "msf", "-c", sql_query]
+            elif db_action == DatabaseAction.OPTIMIZE:
+                optimize_queries = [
+                    "VACUUM ANALYZE;",
+                    "REINDEX DATABASE msf;" if optimize_level > 1 else "VACUUM;",
+                    (
+                        "UPDATE pg_stat_user_tables SET n_tup_ins=0, n_tup_upd=0, n_tup_del=0;"
+                        if optimize_level > 2
+                        else ""
+                    ),
+                ]
+                query = " ".join(filter(None, optimize_queries))
+                cmd = ["psql", "-h", "localhost", "-U", "msf", "-d", "msf", "-c", query]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+            if result.returncode == 0:
+                return EcosystemResult(
+                    status=OperationStatus.SUCCESS,
+                    data={
+                        "action": action,
+                        "command": " ".join(cmd),
+                        "stdout": result.stdout,
+                        "backup_file": backup_file if db_action == DatabaseAction.BACKUP else None,
+                    },
+                    execution_time=time.time() - start_time,
+                    tool_name="msf_database_direct",
+                    output_file=backup_file if db_action == DatabaseAction.BACKUP else None,
+                )
+            return EcosystemResult(
+                status=OperationStatus.FAILURE,
+                error=f"Database operation failed: {result.stderr}",
+                execution_time=time.time() - start_time,
+                tool_name="msf_database_direct",
+            )
+        except subprocess.TimeoutExpired:
+            return EcosystemResult(
+                status=OperationStatus.FAILURE,
+                error="Database operation timed out",
+                execution_time=time.time() - start_time,
+                tool_name="msf_database_direct",
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("MSF Database Direct error: %s", exc)
+            return EcosystemResult(
+                status=OperationStatus.FAILURE,
+                error=str(exc),
+                execution_time=time.time() - start_time,
+                tool_name="msf_database_direct",
+            )
+
+    async def msf_rpc_interface(
+        self,
+        action: str,
+        host: str = "127.0.0.1",
+        port: int = 55553,
+        ssl: bool = True,
+        auth_token: Optional[str] = None,
+        method: Optional[str] = None,
+        params: Optional[List] = None,
+        username: str = "msf",
+        password: Optional[str] = None,
+    ) -> EcosystemResult:
+        start_time = time.time()
+        try:
+            try:
+                rpc_action = RPCAction(action)
+            except ValueError:
+                return EcosystemResult(
+                    status=OperationStatus.FAILURE,
+                    error=f"Invalid RPC action: {action}",
+                    execution_time=time.time() - start_time,
+                    tool_name="msf_rpc_interface",
+                )
+            if rpc_action == RPCAction.START:
+                cmd = ["msfrpcd", "-f", "-a", host, "-p", str(port)]
+                if not ssl:
+                    cmd.append("-S")
+                if username:
+                    cmd.extend(["-U", username])
+                if password:
+                    cmd.extend(["-P", password])
+                process = subprocess.Popen(
+                    cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                )
+                await asyncio.sleep(2)
+                if process.poll() is None:
+                    self.rpc_daemon = process
+                    return EcosystemResult(
+                        status=OperationStatus.SUCCESS,
+                        data={
+                            "action": "start",
+                            "host": host,
+                            "port": port,
+                            "ssl": ssl,
+                            "pid": process.pid,
+                        },
+                        execution_time=time.time() - start_time,
+                        tool_name="msf_rpc_interface",
+                    )
+                stdout, stderr = process.communicate()
+                return EcosystemResult(
+                    status=OperationStatus.FAILURE,
+                    error=f"RPC daemon failed to start: {stderr}",
+                    execution_time=time.time() - start_time,
+                    tool_name="msf_rpc_interface",
+                )
+            if rpc_action == RPCAction.STOP:
+                if self.rpc_daemon and self.rpc_daemon.poll() is None:
+                    self.rpc_daemon.terminate()
+                    self.rpc_daemon.wait(timeout=10)
+                    return EcosystemResult(
+                        status=OperationStatus.SUCCESS,
+                        data={"action": "stop", "message": "RPC daemon stopped"},
+                        execution_time=time.time() - start_time,
+                        tool_name="msf_rpc_interface",
+                    )
+                return EcosystemResult(
+                    status=OperationStatus.FAILURE,
+                    error="No RPC daemon running",
+                    execution_time=time.time() - start_time,
+                    tool_name="msf_rpc_interface",
+                )
+            if rpc_action == RPCAction.STATUS:
+                status = (
+                    "running" if (self.rpc_daemon and self.rpc_daemon.poll() is None) else "stopped"
+                )
+                return EcosystemResult(
+                    status=OperationStatus.SUCCESS,
+                    data={
+                        "action": "status",
+                        "status": status,
+                        "pid": self.rpc_daemon.pid if self.rpc_daemon else None,
+                    },
+                    execution_time=time.time() - start_time,
+                    tool_name="msf_rpc_interface",
+                )
+            if rpc_action == RPCAction.CALL:
+                if not method:
+                    return EcosystemResult(
+                        status=OperationStatus.FAILURE,
+                        error="RPC call requires method",
+                        execution_time=time.time() - start_time,
+                        tool_name="msf_rpc_interface",
+                    )
+                return EcosystemResult(
+                    status=OperationStatus.SUCCESS,
+                    data={
+                        "action": "call",
+                        "method": method,
+                        "params": params,
+                        "message": "RPC call functionality requires RPC client implementation",
+                    },
+                    execution_time=time.time() - start_time,
+                    tool_name="msf_rpc_interface",
+                )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("MSF RPC Interface error: %s", exc)
+            return EcosystemResult(
+                status=OperationStatus.FAILURE,
+                error=str(exc),
+                execution_time=time.time() - start_time,
+                tool_name="msf_rpc_interface",
+            )
+
+    async def msf_interactive_session(
+        self,
+        session_id: str,
+        action: str,
+        command: Optional[str] = None,
+        file_path: Optional[str] = None,
+        destination: Optional[str] = None,
+        interactive_mode: bool = False,
+    ) -> EcosystemResult:
+        start_time = time.time()
+        try:
+            commands = []
+            if action == "shell":
+                if interactive_mode:
+                    commands = [f"sessions -i {session_id}"]
+                else:
+                    commands = [
+                        f"sessions -i {session_id}",
+                        command if command else "getuid",
+                        "background",
+                    ]
+            elif action == "upload":
+                if not file_path or not destination:
+                    return EcosystemResult(
+                        status=OperationStatus.FAILURE,
+                        error="Upload requires file_path and destination",
+                        execution_time=time.time() - start_time,
+                        tool_name="msf_interactive_session",
+                    )
+                commands = [
+                    f"sessions -i {session_id}",
+                    f"upload {file_path} {destination}",
+                    "background",
+                ]
+            elif action == "download":
+                if not file_path:
+                    return EcosystemResult(
+                        status=OperationStatus.FAILURE,
+                        error="Download requires file_path",
+                        execution_time=time.time() - start_time,
+                        tool_name="msf_interactive_session",
+                    )
+                dest = destination if destination else f"./downloaded_{int(time.time())}"
+                commands = [
+                    f"sessions -i {session_id}",
+                    f"download {file_path} {dest}",
+                    "background",
+                ]
+            elif action == "screenshot":
+                commands = [f"sessions -i {session_id}", "screenshot", "background"]
+            elif action == "webcam":
+                commands = [f"sessions -i {session_id}", "webcam_snap", "background"]
+            elif action == "keylog":
+                commands = [f"sessions -i {session_id}", "keyscan_start", "background"]
+            elif action == "sysinfo":
+                commands = [f"sessions -i {session_id}", "sysinfo", "background"]
+            elif action == "migrate":
+                pid = command if command else "explorer.exe"
+                commands = [f"sessions -i {session_id}", f"migrate -N {pid}", "background"]
+            results: List[EcosystemResult] = []
+            for cmd in commands:
+                result = await self.execute_command(cmd, timeout=60)
+                results.append(result)  # type: ignore[arg-type]
+                if result.status != OperationStatus.SUCCESS:
+                    break
+            combined_output: Dict[str, Any] = {}
+            for i, result in enumerate(results):
+                combined_output[f"step_{i+1}"] = getattr(result, "data", None)
+            return EcosystemResult(
+                status=(
+                    OperationStatus.SUCCESS
+                    if all(r.status == OperationStatus.SUCCESS for r in results)
+                    else OperationStatus.FAILURE
+                ),
+                data={
+                    "session_id": session_id,
+                    "action": action,
+                    "results": combined_output,
+                    "commands_executed": commands,
+                },
+                execution_time=time.time() - start_time,
+                tool_name="msf_interactive_session",
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("MSF Interactive Session error: %s", exc)
+            return EcosystemResult(
+                status=OperationStatus.FAILURE,
+                error=str(exc),
+                execution_time=time.time() - start_time,
+                tool_name="msf_interactive_session",
+            )
+
+    async def msf_report_generator(
+        self,
+        report_type: str = "html",
+        workspace: str = "default",
+        template: Optional[str] = None,
+        output_file: Optional[str] = None,
+        filters: Optional[Dict] = None,
+        include_sections: Optional[List[str]] = None,
+    ) -> EcosystemResult:
+        start_time = time.time()
+        try:
+            try:
+                format_type = ReportFormat(report_type)
+            except ValueError:
+                return EcosystemResult(
+                    status=OperationStatus.FAILURE,
+                    error=f"Invalid report type: {report_type}",
+                    execution_time=time.time() - start_time,
+                    tool_name="msf_report_generator",
+                )
+            if not output_file:
+                timestamp = int(time.time())
+                output_file = f"msf_report_{workspace}_{timestamp}.{report_type}"
+            data_commands = [
+                f"workspace {workspace}",
+                "hosts -c address,name,os_name,purpose",
+                "services -c host,port,proto,name,state",
+                "vulns -c host,name,refs",
+                "creds -c host,user,pass,type",
+                "loot -c host,service,type,name,path",
+            ]
+            report_data: Dict[str, str] = {}
+            for cmd in data_commands:
+                result = await self.execute_command(cmd)
+                if result.status == OperationStatus.SUCCESS:
+                    cmd_key = cmd.split()[0]
+                    report_data[cmd_key] = result.data.get("stdout", "")  # type: ignore[assignment]
+            if format_type == ReportFormat.HTML:
+                content = self._generate_html_report(report_data, workspace, include_sections)
+            elif format_type == ReportFormat.CSV:
+                content = self._generate_csv_report(report_data, workspace)
+            elif format_type == ReportFormat.JSON:
+                content = self._generate_json_report(report_data, workspace)
+            elif format_type == ReportFormat.XML:
+                content = self._generate_xml_report(report_data, workspace)
+            elif format_type == ReportFormat.EXECUTIVE:
+                content = self._generate_executive_report(report_data, workspace)
+            else:
+                content = self._generate_text_report(report_data, workspace)
+            with open(output_file, "w", encoding="utf-8") as f:
+                f.write(content)
+            return EcosystemResult(
+                status=OperationStatus.SUCCESS,
+                data={
+                    "report_type": report_type,
+                    "workspace": workspace,
+                    "output_file": output_file,
+                    "file_size": os.path.getsize(output_file),
+                    "sections_included": include_sections or ["all"],
+                    "data_sources": list(report_data.keys()),
+                },
+                execution_time=time.time() - start_time,
+                tool_name="msf_report_generator",
+                output_file=output_file,
+                artifacts=[output_file],
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("MSF Report Generator error: %s", exc)
+            return EcosystemResult(
+                status=OperationStatus.FAILURE,
+                error=str(exc),
+                execution_time=time.time() - start_time,
+                tool_name="msf_report_generator",
+            )
+
+    def _generate_html_report(
+        self, data: Dict[str, str], workspace: str, sections: Optional[List[str]] = None
+    ) -> str:
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>Metasploit Security Assessment Report - {workspace}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 40px; }}
+        .header {{ background: #d32f2f; color: white; padding: 20px; text-align: center; }}
+        .section {{ margin: 20px 0; padding: 15px; border-left: 4px solid #d32f2f; }}
+        .data-table {{ width: 100%; border-collapse: collapse; margin: 10px 0; }}
+        .data-table th, .data-table td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+        .data-table th {{ background-color: #f2f2f2; }}
+        .summary {{ background: #f5f5f5; padding: 15px; border-radius: 5px; }}
+    </style>
+</head>
+<body>
+    <div class=\"header\"> 
+        <h1>Metasploit Security Assessment Report</h1>
+        <p>Workspace: {workspace} | Generated: {timestamp}</p>
+    </div>
+    <div class=\"section\">
+        <h2>Executive Summary</h2>
+        <div class=\"summary\">
+            <p>This report contains the results of security assessment conducted using the Metasploit Framework.</p>
+            <p>Workspace analyzed: <strong>{workspace}</strong></p>
+        </div>
+    </div>
+    <div class=\"section\">
+        <h2>Discovered Hosts</h2>
+        <pre>{data.get('hosts', 'No host data available')}</pre>
+    </div>
+    <div class=\"section\">
+        <h2>Services Enumerated</h2>
+        <pre>{data.get('services', 'No service data available')}</pre>
+    </div>
+    <div class=\"section\">
+        <h2>Vulnerabilities Identified</h2>
+        <pre>{data.get('vulns', 'No vulnerability data available')}</pre>
+    </div>
+    <div class=\"section\">
+        <h2>Credentials Obtained</h2>
+        <pre>{data.get('creds', 'No credential data available')}</pre>
+    </div>
+    <div class=\"section\">
+        <h2>Loot Collected</h2>
+        <pre>{data.get('loot', 'No loot data available')}</pre>
+    </div>
+</body>
+</html>"""
+        return html
+
+    def _generate_csv_report(self, data: Dict[str, str], workspace: str) -> str:
+        csv_content = f"Metasploit Report,{workspace},{time.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+        for section, content in data.items():
+            csv_content += f"{section.upper()}\n"
+            csv_content += content + "\n\n"
+        return csv_content
+
+    def _generate_json_report(self, data: Dict[str, str], workspace: str) -> str:
+        report = {
+            "report_info": {
+                "workspace": workspace,
+                "generated": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "generator": "MSF MCP Report Generator",
+            },
+            "data": data,
+        }
+        return json.dumps(report, indent=2)
+
+    def _generate_xml_report(self, data: Dict[str, str], workspace: str) -> str:
+        xml_content = f"""<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<metasploit_report workspace=\"{workspace}\" generated=\"{time.strftime('%Y-%m-%d %H:%M:%S')}\">\n"""
+        for section, content in data.items():
+            xml_content += f"  <{section}>\n"
+            xml_content += f"    <![CDATA[{content}]]>\n"
+            xml_content += f"  </{section}>\n"
+        xml_content += "</metasploit_report>"
+        return xml_content
+
+    def _generate_executive_report(self, data: Dict[str, str], workspace: str) -> str:
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        host_count = len(data.get("hosts", "").split("\n")) if data.get("hosts") else 0
+        service_count = len(data.get("services", "").split("\n")) if data.get("services") else 0
+        vuln_count = len(data.get("vulns", "").split("\n")) if data.get("vulns") else 0
+        cred_count = len(data.get("creds", "").split("\n")) if data.get("creds") else 0
+        loot_count = len(data.get("loot", "").split("\n")) if data.get("loot") else 0
+        report = f"""EXECUTIVE SECURITY ASSESSMENT SUMMARY
+=====================================
+
+Assessment Details:
+- Workspace: {workspace}
+- Generated: {timestamp}
+- Tool: Metasploit Framework
+
+Key Findings:
+- Host Discovery: {host_count} hosts identified
+- Service Enumeration: {service_count} services found  
+- Vulnerabilities: {vuln_count} vulnerabilities discovered
+- Credential Harvest: {cred_count} credentials obtained
+- Data Extraction: {loot_count} loot items collected
+
+Recommendations:
+1. Address identified vulnerabilities immediately
+2. Review and strengthen authentication mechanisms  
+3. Implement network segmentation
+4. Enhance monitoring and incident response capabilities
+
+Detailed technical findings are available in the full assessment report."""
+        return report
+
+    def _generate_text_report(self, data: Dict[str, str], workspace: str) -> str:
+        content = f"Metasploit Framework Report - {workspace}\n"
+        content += f"Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}\n"
+        content += "=" * 50 + "\n\n"
+        for section, section_data in data.items():
+            content += f"{section.upper()}\n"
+            content += "-" * len(section) + "\n"
+            content += section_data + "\n\n"
+        return content
+
+    def _get_file_hash(self, file_path: str) -> str:
+        hash_sha256 = hashlib.sha256()
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_sha256.update(chunk)
+        return hash_sha256.hexdigest()
+
+    async def cleanup(self):
+        if self.rpc_daemon and self.rpc_daemon.poll() is None:
+            self.rpc_daemon.terminate()
+        await super().cleanup()
+
+
+async def msf_venom_direct(**kwargs):
+    tools = MSFEcosystemTools()
+    try:
+        await tools.initialize()
+        return await tools.msf_venom_direct(**kwargs)
+    finally:
+        await tools.cleanup()
+
+
+async def msf_database_direct(**kwargs):
+    tools = MSFEcosystemTools()
+    try:
+        await tools.initialize()
+        return await tools.msf_database_direct(**kwargs)
+    finally:
+        await tools.cleanup()
+
+
+async def msf_rpc_interface(**kwargs):
+    tools = MSFEcosystemTools()
+    try:
+        await tools.initialize()
+        return await tools.msf_rpc_interface(**kwargs)
+    finally:
+        await tools.cleanup()
+
+
+async def msf_interactive_session(**kwargs):
+    tools = MSFEcosystemTools()
+    try:
+        await tools.initialize()
+        return await tools.msf_interactive_session(**kwargs)
+    finally:
+        await tools.cleanup()
+
+
+async def msf_report_generator(**kwargs):
+    tools = MSFEcosystemTools()
+    try:
+        await tools.initialize()
+        return await tools.msf_report_generator(**kwargs)
+    finally:
+        await tools.cleanup()
