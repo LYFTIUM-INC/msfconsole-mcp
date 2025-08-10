@@ -72,6 +72,7 @@ except ImportError as e:
 
 VERSION = "2.0.0"
 mcp = FastMCP("msfconsole-enhanced", version=VERSION)
+PREFER_RPC = os.getenv("PREFER_RPC", "false").lower() == "true"
 
 COMMAND_TIMEOUTS = {
     "help": 45,
@@ -264,6 +265,10 @@ async def execute_msf_command(
                 indent=2,
             )
         context = {"workspace": workspace, "timeout": timeout}
+        if PREFER_RPC:
+            logger.info(
+                "PREFER_RPC is enabled, but RPC execution path not wired; falling back to console."
+            )
         result = await dual_mode_handler.execute_command(command, context)
         await ctx.info(f"Command executed successfully using {result.mode_used} mode")
         parsed_result = msf_parser.parse(result.output)
