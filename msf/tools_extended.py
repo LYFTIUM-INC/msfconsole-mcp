@@ -1278,6 +1278,29 @@ class ConsoleExtendedTools(MSFConsoleStableWrapper):
                         execution_time=result.execution_time,
                     )
 
+            elif action == "portfwd_delete":
+                if not options or "local_port" not in options:
+                    return ExtendedToolResult(
+                        status=OperationStatus.FAILURE,
+                        data=None,
+                        execution_time=time.time() - start_time,
+                        error="portfwd_delete requires at least local_port",
+                    )
+                # Delete port forward via argument match
+                cmd = (
+                    f"sessions -i {session_id} -c 'portfwd delete -L 127.0.0.1 -l {options['local_port']}"
+                    + (f" -p {options['remote_port']}" if options.get("remote_port") else "")
+                    + (f" -r {options['remote_host']}" if options.get("remote_host") else "")
+                    + "'"
+                )
+                result = await self.execute_command(cmd, timeout)
+                return ExtendedToolResult(
+                    status=result.status,
+                    data={"portfwd_deleted": result.status == OperationStatus.SUCCESS},
+                    execution_time=result.execution_time,
+                    error=result.error,
+                )
+
             elif action == "socks_proxy":
                 # Set up SOCKS4a proxy
                 use_result = await self.msf_module_manager("use", "auxiliary/server/socks4a")
@@ -1311,6 +1334,22 @@ class ConsoleExtendedTools(MSFConsoleStableWrapper):
                             },
                             execution_time=proxy_result.execution_time,
                         )
+
+            elif action == "socks_stop":
+                # Prefer killing by recorded job id
+                if self.socks_job_id is not None:
+                    cmd = f"jobs -k {self.socks_job_id}"
+                else:
+                    cmd = "jobs -K"
+                result = await self.execute_command(cmd, timeout)
+                if result.status == OperationStatus.SUCCESS:
+                    self.socks_job_id = None
+                return ExtendedToolResult(
+                    status=result.status,
+                    data={"socks_stopped": result.status == OperationStatus.SUCCESS},
+                    execution_time=result.execution_time,
+                    error=result.error,
+                )
 
             # Invalid action
             return ExtendedToolResult(
