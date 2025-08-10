@@ -1351,6 +1351,34 @@ class ConsoleExtendedTools(MSFConsoleStableWrapper):
                     error=result.error,
                 )
 
+            elif action == "autoroute":
+                # Use autoroute post module
+                module = "post/multi/manage/autoroute"
+                use_res = await self.msf_module_manager("use", module)
+                if use_res.status != OperationStatus.SUCCESS:
+                    return ExtendedToolResult(
+                        status=OperationStatus.FAILURE,
+                        data=None,
+                        execution_time=time.time() - start_time,
+                        error="Failed to load autoroute module",
+                    )
+                set_opts = {"SESSION": str(session_id)}
+                if options and options.get("subnet"):
+                    set_opts["SUBNET"] = options["subnet"]
+                if options and options.get("netmask"):
+                    set_opts["NETMASK"] = options["netmask"]
+                await self.msf_module_manager("set", options=set_opts)
+                run_res = await self.msf_module_manager("run", timeout=timeout)
+                return ExtendedToolResult(
+                    status=run_res.status,
+                    data={
+                        "autoroute": run_res.status == OperationStatus.SUCCESS,
+                        "options": set_opts,
+                    },
+                    execution_time=run_res.execution_time,
+                    error=run_res.error,
+                )
+
             # Invalid action
             return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
