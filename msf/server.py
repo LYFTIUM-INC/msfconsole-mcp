@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 
+"""
+Enhanced Metasploit Framework Console MCP Server
+------------------------------------------------
+Comprehensive MCP integration with dual-mode operation, advanced security,
+and full feature coverage of Metasploit Framework capabilities.
+"""
+
 import asyncio
 import logging
 import json
 import sys
 from typing import Optional
 
-from msf_parser import MSFParser
+from msf_parser import MSFParser, OutputType
 
 try:
     from mcp.server.fastmcp import FastMCP, Context
@@ -132,7 +139,80 @@ async def get_msf_status(ctx: Context) -> str:
         return json.dumps({"status": "error", "error": str(e), "version": VERSION}, indent=2)
 
 
-# ... rest of tool endpoints copied from enhanced server ...
+@mcp.tool()
+async def execute_msf_command(
+    ctx: Context, command: str, workspace: str = "default", timeout: int = None
+) -> str:
+    if timeout is None:
+        timeout = get_adaptive_timeout(command)
+    await ctx.info(f"Executing MSF command: {command[:50]}... (timeout: {timeout}s)")
+    try:
+        if security_manager:
+            validation_result = await security_manager.validate_command(
+                command, {"workspace": workspace}
+            )
+            if not validation_result["valid"]:
+                return json.dumps(
+                    {
+                        "success": False,
+                        "error": "Command blocked by security validation",
+                        "command": command,
+                        "security_details": validation_result,
+                    },
+                    indent=2,
+                )
+            command = validation_result["sanitized_command"]
+        else:
+            command = command.replace("\x00", "").replace("\r", "").strip()
+            if len(command) > 1000:
+                command = command[:1000]
+        try:
+            await asyncio.wait_for(ensure_initialized(), timeout=60)
+        except asyncio.TimeoutError:
+            return json.dumps(
+                {
+                    "success": False,
+                    "error": "Metasploit initialization timeout",
+                    "message": "The Metasploit framework is taking too long to initialize. Please try again later.",
+                },
+                indent=2,
+            )
+        context = {"workspace": workspace, "timeout": timeout}
+        result = await dual_mode_handler.execute_command(command, context)
+        await ctx.info(f"Command executed successfully using {result.mode_used} mode")
+        parsed_result = msf_parser.parse(result.output)
+        response_data = {
+            "success": result.success,
+            "command": command,
+            "execution_details": {
+                "mode_used": result.mode_used,
+                "execution_time": result.execution_time,
+                "workspace": workspace,
+            },
+            "metadata": result.metadata or {},
+        }
+        if parsed_result.success and parsed_result.output_type != OutputType.RAW:
+            response_data["parsed_output"] = {
+                "type": parsed_result.output_type.value,
+                "data": parsed_result.data,
+                "metadata": parsed_result.metadata,
+            }
+            response_data["raw_output"] = result.output
+        else:
+            response_data["output"] = result.output
+            if parsed_result.error_message:
+                response_data["parsing_info"] = {
+                    "attempted": True,
+                    "error": parsed_result.error_message,
+                }
+        if result.error:
+            response_data["error"] = result.error
+        return json.dumps(response_data, indent=2)
+    except Exception as e:
+        logger.error(f"Error executing command: {e}")
+        await ctx.error(f"Command execution failed: {e}")
+        return json.dumps({"success": False, "error": str(e), "command": command}, indent=2)
+
 
 msf_parser = MSFParser()
 
