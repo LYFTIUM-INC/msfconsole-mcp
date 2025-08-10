@@ -12,18 +12,20 @@ def parse_search_results(output: str) -> List[Dict[str, str]]:
     modules: List[Dict[str, str]] = []
     for line in output.splitlines():
         line = line.strip()
-        if not line or line.startswith('#') or '===' in line:
+        if not line or line.startswith("#") or "===" in line:
             continue
-        if line.startswith('Name') or line.startswith('----') or line.startswith('='):
+        if line.startswith("Name") or line.startswith("----") or line.startswith("="):
             continue
         parts = line.split(None, 3)
         if parts:
-            modules.append({
-                "name": parts[0],
-                "disclosure_date": parts[1] if len(parts) > 1 else "",
-                "rank": parts[2] if len(parts) > 2 else "",
-                "description": parts[3] if len(parts) > 3 else "",
-            })
+            modules.append(
+                {
+                    "name": parts[0],
+                    "disclosure_date": parts[1] if len(parts) > 1 else "",
+                    "rank": parts[2] if len(parts) > 2 else "",
+                    "description": parts[3] if len(parts) > 3 else "",
+                }
+            )
     return modules
 
 
@@ -34,10 +36,10 @@ def parse_workspace_list(output: str) -> List[Dict[str, str]]:
     workspaces: List[Dict[str, str]] = []
     for line in output.splitlines():
         line = line.strip()
-        if not line or line == 'Workspaces' or line.startswith('='):
+        if not line or line == "Workspaces" or line.startswith("="):
             continue
-        current = line.startswith('*')
-        name = line.lstrip('* ').strip()
+        current = line.startswith("*")
+        name = line.lstrip("* ").strip()
         if name:
             workspaces.append({"name": name, "current": current})
     return workspaces

@@ -27,6 +27,7 @@ class OutputType(Enum):
 @dataclass
 class ParsedOutput:
     """Structured representation of parsed MSF output"""
+
     output_type: OutputType
     success: bool
     data: Union[List[Dict], Dict[str, Any], str]
@@ -88,7 +89,11 @@ class MSFParser:
         for i in range(len(lines) - 1):
             header_line = lines[i].strip()
             sep_line = lines[i + 1]
-            if header_line and len(header_line.split()) >= 2 and re.match(r"^[\s\-_=]{3,}$", sep_line):
+            if (
+                header_line
+                and len(header_line.split()) >= 2
+                and re.match(r"^[\s\-_=]{3,}$", sep_line)
+            ):
                 return OutputType.TABLE
         return OutputType.RAW
 
@@ -119,7 +124,9 @@ class MSFParser:
             match = re.search(pattern, output, re.IGNORECASE)
             if match:
                 version_data[key] = match.group(1).strip()
-        return ParsedOutput(output_type=OutputType.VERSION_INFO, success=True, data=version_data, raw_output=output)
+        return ParsedOutput(
+            output_type=OutputType.VERSION_INFO, success=True, data=version_data, raw_output=output
+        )
 
     def parse_table_output(self, output: str) -> ParsedOutput:
         lines = output.split("\n")
@@ -137,7 +144,13 @@ class MSFParser:
                         header_idx = i
                         break
         if header_idx == -1:
-            return ParsedOutput(output_type=OutputType.RAW, success=False, data=output, raw_output=output, error_message="Could not detect table structure")
+            return ParsedOutput(
+                output_type=OutputType.RAW,
+                success=False,
+                data=output,
+                raw_output=output,
+                error_message="Could not detect table structure",
+            )
         header_line = lines[header_idx].strip()
         if "#" in header_line and "Name" in header_line:
             return self._parse_module_search_table(lines, header_idx)
@@ -164,7 +177,13 @@ class MSFParser:
                     "description": parts[5] if len(parts) > 5 else "",
                 }
                 modules.append(module)
-        return ParsedOutput(output_type=OutputType.TABLE, success=True, data=modules, raw_output="\n".join(lines), metadata={"table_type": "module_search", "count": len(modules)})
+        return ParsedOutput(
+            output_type=OutputType.TABLE,
+            success=True,
+            data=modules,
+            raw_output="\n".join(lines),
+            metadata={"table_type": "module_search", "count": len(modules)},
+        )
 
     def _parse_options_table(self, lines: List[str], header_idx: int) -> ParsedOutput:
         options: List[Dict[str, Any]] = []
@@ -186,7 +205,13 @@ class MSFParser:
                     "description": parts[3] if len(parts) > 3 else "",
                 }
                 options.append(option)
-        return ParsedOutput(output_type=OutputType.TABLE, success=True, data=options, raw_output="\n".join(lines), metadata={"table_type": "options", "count": len(options)})
+        return ParsedOutput(
+            output_type=OutputType.TABLE,
+            success=True,
+            data=options,
+            raw_output="\n".join(lines),
+            metadata={"table_type": "options", "count": len(options)},
+        )
 
     def _parse_generic_table(self, lines: List[str], header_idx: int) -> ParsedOutput:
         header_line = lines[header_idx].strip()
@@ -205,7 +230,13 @@ class MSFParser:
                 for i, header in enumerate(headers):
                     row[header.lower()] = parts[i] if i < len(parts) else ""
                 data.append(row)
-        return ParsedOutput(output_type=OutputType.TABLE, success=True, data=data, raw_output="\n".join(lines), metadata={"table_type": "generic", "headers": headers, "count": len(data)})
+        return ParsedOutput(
+            output_type=OutputType.TABLE,
+            success=True,
+            data=data,
+            raw_output="\n".join(lines),
+            metadata={"table_type": "generic", "headers": headers, "count": len(data)},
+        )
 
     def parse_info_block(self, output: str) -> ParsedOutput:
         sections: Dict[str, Any] = {"metadata": {}, "options": [], "targets": [], "description": ""}
@@ -233,12 +264,14 @@ class MSFParser:
                     continue
                 parts = line.split(None, 3)
                 if len(parts) >= 3:
-                    sections["options"].append({
-                        "name": parts[0],
-                        "current_setting": parts[1],
-                        "required": parts[2],
-                        "description": parts[3] if len(parts) > 3 else "",
-                    })
+                    sections["options"].append(
+                        {
+                            "name": parts[0],
+                            "current_setting": parts[1],
+                            "required": parts[2],
+                            "description": parts[3] if len(parts) > 3 else "",
+                        }
+                    )
             elif current_section == "targets":
                 if line.startswith("Id") or re.match(r"^[\s\-=]+$", line):
                     continue
@@ -247,7 +280,13 @@ class MSFParser:
                     sections["targets"].append({"id": parts[0], "name": parts[1]})
             elif current_section == "description":
                 sections["description"] = (sections["description"] + " " + line).strip()
-        return ParsedOutput(output_type=OutputType.INFO_BLOCK, success=True, data=sections, raw_output=output, metadata={"sections": list(sections.keys())})
+        return ParsedOutput(
+            output_type=OutputType.INFO_BLOCK,
+            success=True,
+            data=sections,
+            raw_output=output,
+            metadata={"sections": list(sections.keys())},
+        )
 
     def parse_list_output(self, output: str) -> ParsedOutput:
         items: List[Dict[str, Any]] = []
@@ -259,11 +298,23 @@ class MSFParser:
                 items.append({"name": line[1:].strip(), "current": True})
             else:
                 items.append({"name": line, "current": False})
-        return ParsedOutput(output_type=OutputType.LIST, success=True, data=items, raw_output=output, metadata={"count": len(items)})
+        return ParsedOutput(
+            output_type=OutputType.LIST,
+            success=True,
+            data=items,
+            raw_output=output,
+            metadata={"count": len(items)},
+        )
 
     def parse(self, output: str) -> ParsedOutput:
         if not output or not output.strip():
-            return ParsedOutput(output_type=OutputType.RAW, success=False, data="", raw_output=output, error_message="Empty output")
+            return ParsedOutput(
+                output_type=OutputType.RAW,
+                success=False,
+                data="",
+                raw_output=output,
+                error_message="Empty output",
+            )
         output_type = self.detect_output_type(output)
         try:
             if output_type == OutputType.ERROR:
@@ -277,6 +328,14 @@ class MSFParser:
             elif output_type == OutputType.LIST:
                 return self.parse_list_output(output)
             else:
-                return ParsedOutput(output_type=OutputType.RAW, success=True, data=output, raw_output=output)
+                return ParsedOutput(
+                    output_type=OutputType.RAW, success=True, data=output, raw_output=output
+                )
         except Exception as e:
-            return ParsedOutput(output_type=OutputType.RAW, success=False, data=output, raw_output=output, error_message=f"Parsing failed: {str(e)}")
+            return ParsedOutput(
+                output_type=OutputType.RAW,
+                success=False,
+                data=output,
+                raw_output=output,
+                error_message=f"Parsing failed: {str(e)}",
+            )

@@ -22,10 +22,9 @@ CONFIG: Dict[str, Any] = {
         "workspace": "default",  # Default Metasploit workspace
         "timeout": 30,  # Default timeout for metasploit commands (seconds) - reduced from 60
         "db_check_timeout": 10,  # Specific timeout for database checks (seconds)
-        "retry_attempts": 2,     # Number of retries for failed commands
-        "retry_delay": 1,        # Delay between retries (seconds)
+        "retry_attempts": 2,  # Number of retries for failed commands
+        "retry_delay": 1,  # Delay between retries (seconds)
     },
-    
     # Security settings
     "security": {
         "command_timeout": 60,  # Maximum time (seconds) a command can run - reduced from 120
@@ -36,13 +35,11 @@ CONFIG: Dict[str, Any] = {
         ],
         "validate_commands": True,  # Whether to validate commands before running
     },
-    
     # Output settings
     "output": {
         "max_output_length": 50000,  # Maximum length of command output to return
         "truncation_message": "\n[... Output truncated due to length. Full output in Metasploit logs ...]\n",
     },
-    
     # Server settings
     "server": {
         "host": "localhost",
@@ -50,20 +47,17 @@ CONFIG: Dict[str, Any] = {
         "debug": True,
         "log_level": "INFO",
     },
-    
     # Documentation settings
     "docs": {
         "path": os.path.join(os.path.dirname(os.path.dirname(__file__)), "mcp-documentation"),
         "enable_docs": True,
     },
-    
     # Error handling settings
     "error_handling": {
         "suppress_db_errors": True,  # Continue without database if db_status fails
         "db_error_message": "Database connection not available, some functionality will be limited.",
         "show_stack_traces": False,  # Whether to include stack traces in error messages
     },
-    
     # Progress reporting settings
     "progress": {
         "default_steps": 100,  # Default number of steps for progress reporting
@@ -86,6 +80,7 @@ ERROR_MESSAGES = {
     "version_check_failed": "Could not determine Metasploit version. Continuing with limited functionality.",
 }
 
+
 # Verify the configuration at import time
 def verify_config():
     """Verify and normalize configuration"""
@@ -93,17 +88,18 @@ def verify_config():
     if CONFIG["metasploit"]["timeout"] <= 0:
         print("Warning: Invalid timeout value, setting to default 30 seconds")
         CONFIG["metasploit"]["timeout"] = 30
-    
+
     # Check for invalid retry settings
     if CONFIG["metasploit"]["retry_attempts"] < 0:
         CONFIG["metasploit"]["retry_attempts"] = 0
-    
+
     # Ensure metasploit paths exist or warn
     if not os.path.exists(CONFIG["metasploit"]["msfconsole_path"]):
         print(f"Warning: msfconsole not found at {CONFIG['metasploit']['msfconsole_path']}")
-    
+
     if not os.path.exists(CONFIG["metasploit"]["msfvenom_path"]):
         print(f"Warning: msfvenom not found at {CONFIG['metasploit']['msfvenom_path']}")
+
 
 # Run verification at import time
 verify_config()
