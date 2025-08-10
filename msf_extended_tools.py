@@ -16,10 +16,10 @@ from enum import Enum
 import re
 
 # Import existing stable wrapper
-from msf_stable_integration import (
-    MSFConsoleStableWrapper, 
-    OperationStatus, 
-    OperationResult
+from msf import (
+    MSFConsoleStableWrapper,
+    OperationStatus,
+    OperationResult,
 )
 
 # Set up logging

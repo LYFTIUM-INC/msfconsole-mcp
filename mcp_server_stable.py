@@ -18,11 +18,11 @@ from dataclasses import asdict
 # Add the current directory to Python path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from msf_stable_integration import MSFConsoleStableWrapper, OperationStatus, OperationResult
-from msf_extended_tools import MSFExtendedTools, ExtendedOperationResult
-from msf_final_five_tools import MSFFinalFiveTools, FinalOperationResult
-from msf_ecosystem_tools import MSFEcosystemTools, EcosystemResult
-from msf_advanced_tools import MSFAdvancedTools, AdvancedResult
+from msf import MSFConsoleStableWrapper, OperationStatus, OperationResult
+from msf import MSFExtendedTools, ExtendedOperationResult
+from msf import MSFFinalFiveTools, FinalOperationResult
+from msf import MSFEcosystemTools, EcosystemResult
+from msf import MSFAdvancedTools, AdvancedResult
 
 # Set up logging
 logging.basicConfig(

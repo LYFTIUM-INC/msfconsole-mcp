@@ -36,7 +36,7 @@ import base64
 import hashlib
 
 # Import base functionality from existing stable integration
-from msf_stable_integration import MSFConsoleStableWrapper, OperationStatus, OperationResult
+from msf import MSFConsoleStableWrapper, OperationStatus, OperationResult
 
 # Set up logging
 logger = logging.getLogger(__name__)
