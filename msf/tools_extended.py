@@ -2686,6 +2686,56 @@ class ConsoleExtendedTools(MSFConsoleStableWrapper):
             "status": "available",
         }
 
+    # ==================== TOOL 12: Lateral Movement Orchestrator ====================
+
+    async def msf_lateral_movement(
+        self,
+        technique: str,
+        options: Dict[str, Any],
+        timeout: Optional[float] = None,
+    ) -> ExtendedToolResult:
+        start_time = time.time()
+        try:
+            tech = technique.lower()
+            module_map = {
+                "psexec": "exploit/windows/smb/psexec",
+                "winrm": "auxiliary/scanner/winrm/winrm_cmd",
+                "wmi": "exploit/windows/local/wmi_command",
+            }
+            if tech not in module_map:
+                return ExtendedToolResult(
+                    status=OperationStatus.FAILURE,
+                    data=None,
+                    execution_time=time.time() - start_time,
+                    error=f"Invalid technique: {tech}",
+                )
+            use_res = await self.msf_module_manager("use", module_map[tech])
+            if use_res.status != OperationStatus.SUCCESS:
+                return ExtendedToolResult(
+                    status=use_res.status,
+                    data=None,
+                    execution_time=use_res.execution_time,
+                    error=use_res.error,
+                )
+            await self.msf_module_manager(
+                "set", options={k: str(v) for k, v in (options or {}).items()}
+            )
+            run_res = await self.msf_module_manager("run", timeout=timeout or 180.0)
+            return ExtendedToolResult(
+                status=run_res.status,
+                data=run_res.data,
+                execution_time=run_res.execution_time,
+                error=run_res.error,
+            )
+        except Exception as e:
+            logger.error(f"Lateral movement error: {e}")
+            return ExtendedToolResult(
+                status=OperationStatus.FAILURE,
+                data=None,
+                execution_time=time.time() - start_time,
+                error=str(e),
+            )
+
 
 # Testing the implementation
 if __name__ == "__main__":
