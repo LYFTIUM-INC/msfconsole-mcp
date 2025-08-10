@@ -86,15 +86,23 @@ class ImprovedMSFParser:
             if re.search(pattern, output, re.IGNORECASE | re.MULTILINE):
                 return OutputType.LIST
         
-        # Check for tables
-        for pattern in self.patterns["table"]:
-            if re.search(pattern, output, re.MULTILINE):
-                return OutputType.TABLE
-        
-        # Check for info blocks
+        # Check for info blocks first (before tables)
         for pattern in self.patterns["info_block"]:
             if re.search(pattern, output, re.MULTILINE):
                 return OutputType.INFO_BLOCK
+
+        # Check for tables (known patterns)
+        for pattern in self.patterns["table"]:
+            if re.search(pattern, output, re.MULTILINE):
+                return OutputType.TABLE
+
+        # Heuristic: generic table with header followed by dashed separator
+        lines = output.split('\n')
+        for i in range(len(lines) - 1):
+            header_line = lines[i].strip()
+            sep_line = lines[i + 1]
+            if header_line and len(header_line.split()) >= 2 and re.match(r"^[\s\-_=]{3,}$", sep_line):
+                return OutputType.TABLE
         
         # Default to raw
         return OutputType.RAW
@@ -318,8 +326,11 @@ class ImprovedMSFParser:
             
             elif current_section == "options":
                 # Parse options table
+                # Skip separator/header lines
+                if re.match(r'^[\s\-=]+$', line) or line.startswith('Name'):
+                    continue
                 parts = line.split(None, 3)
-                if len(parts) >= 3 and not line.startswith('Name'):
+                if len(parts) >= 3:
                     option = {
                         "name": parts[0],
                         "current_setting": parts[1],
@@ -330,8 +341,11 @@ class ImprovedMSFParser:
             
             elif current_section == "targets":
                 # Parse targets table
+                # Skip header/separator lines
+                if line.startswith('Id') or re.match(r'^[\s\-=]+$', line):
+                    continue
                 parts = line.split(None, 1)
-                if len(parts) >= 2 and not line.startswith('Id'):
+                if len(parts) >= 2:
                     target = {
                         "id": parts[0],
                         "name": parts[1]
