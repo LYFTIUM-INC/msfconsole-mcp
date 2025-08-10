@@ -77,6 +77,7 @@ class ConsoleExtendedTools(MSFConsoleStableWrapper):
         super().__init__()
         self.module_context = None  # Current module context
         self.session_context = {}  # Active session contexts
+        self.socks_job_id = None
 
     # ==================== TOOL 1: Module Manager ====================
 
@@ -1258,16 +1259,14 @@ class ConsoleExtendedTools(MSFConsoleStableWrapper):
                         error="Options required for port forwarding",
                     )
 
-                # Build portfwd command
-                cmd = f"sessions -i {session_id} -c 'portfwd add"
-
+                # Build portfwd command by ID
+                cmd = f"sessions -i {session_id} -c 'portfwd add -L 127.0.0.1"
                 if "local_port" in options:
                     cmd += f" -l {options['local_port']}"
-                if "remote_host" in options:
-                    cmd += f" -p {options['remote_host']}"
                 if "remote_port" in options:
-                    cmd += f" -r {options['remote_port']}"
-
+                    cmd += f" -p {options['remote_port']}"
+                if "remote_host" in options:
+                    cmd += f" -r {options['remote_host']}"
                 cmd += "'"
 
                 result = await self.execute_command(cmd, timeout)
@@ -1280,30 +1279,37 @@ class ConsoleExtendedTools(MSFConsoleStableWrapper):
                     )
 
             elif action == "socks_proxy":
-                # Set up SOCKS proxy
-                use_result = await self.msf_module_manager("use", "auxiliary/server/socks_proxy")
+                # Set up SOCKS4a proxy
+                use_result = await self.msf_module_manager("use", "auxiliary/server/socks4a")
 
                 if use_result.status == OperationStatus.SUCCESS:
                     # Set options
                     proxy_options = {
                         "SRVPORT": options.get("port", "1080") if options else "1080",
-                        "VERSION": options.get("version", "5") if options else "5",
+                        "VERSION": options.get("version", "4a") if options else "4a",
                     }
 
                     await self.msf_module_manager("set", options=proxy_options)
 
-                    # Start SOCKS proxy
+                    # Start SOCKS proxy and capture job id
                     proxy_result = await self.execute_command("run -j", timeout)
-
                     if proxy_result.status == OperationStatus.SUCCESS:
+                        # Attempt to parse job id from output
+                        stdout = proxy_result.data.get("stdout", "") if proxy_result.data else ""
+                        job_id = (
+                            self._extract_job_id(stdout)
+                            if hasattr(self, "_extract_job_id")
+                            else None
+                        )
+                        self.socks_job_id = job_id
                         return ExtendedToolResult(
                             status=OperationStatus.SUCCESS,
                             data={
                                 "socks_proxy": True,
                                 "port": proxy_options["SRVPORT"],
-                                "version": proxy_options["VERSION"],
+                                "job_id": job_id,
                             },
-                            execution_time=time.time() - start_time,
+                            execution_time=proxy_result.execution_time,
                         )
 
             # Invalid action
@@ -1311,7 +1317,7 @@ class ConsoleExtendedTools(MSFConsoleStableWrapper):
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
-                error=f"Invalid action: {action}. Valid actions: add_route, list_routes, portfwd, socks_proxy",
+                error="Invalid action for pivot manager",
             )
 
         except Exception as e:
