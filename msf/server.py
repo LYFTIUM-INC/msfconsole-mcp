@@ -24,6 +24,7 @@ except ImportError as e:
     sys.exit(1)
 
 from .security_utils import is_command_allowed
+from .policy import is_denied, RateLimiter
 
 # Logging configuration via env
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -97,6 +98,10 @@ def get_adaptive_timeout(command: str) -> int:
 
 dual_mode_handler: Optional[MSFDualModeHandler] = None
 security_manager: Optional[MSFSecurityManager] = None
+rate_limiter = RateLimiter(
+    max_calls=int(os.getenv("MCP_RATE_MAX", "30")),
+    window_secs=int(os.getenv("MCP_RATE_WINDOW", "60")),
+)
 
 
 async def ensure_initialized():
@@ -197,6 +202,24 @@ async def execute_msf_command(
                     {
                         "success": False,
                         "error": "Command not allowed by fallback policy",
+                        "command": command,
+                    },
+                    indent=2,
+                )
+            if is_denied(command):
+                return json.dumps(
+                    {
+                        "success": False,
+                        "error": "Command denied by policy",
+                        "command": command,
+                    },
+                    indent=2,
+                )
+            if not rate_limiter.allow():
+                return json.dumps(
+                    {
+                        "success": False,
+                        "error": "Rate limit exceeded",
                         "command": command,
                     },
                     indent=2,
