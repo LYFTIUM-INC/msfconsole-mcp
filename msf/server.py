@@ -4,10 +4,9 @@ import asyncio
 import logging
 import json
 import sys
-from typing import Dict, Optional, List
-from dataclasses import asdict
+from typing import Optional
 
-from msf_parser import MSFParser, OutputType
+from msf_parser import MSFParser
 
 try:
     from mcp.server.fastmcp import FastMCP, Context

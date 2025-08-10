@@ -7,12 +7,10 @@ Built on top of the existing MSFConsoleStableWrapper foundation.
 """
 
 import logging
-import json
 import time
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
-import re
 
 from .core import (
     MSFConsoleStableWrapper,
