@@ -7,10 +7,10 @@ from .parsing import (
     parse_sessions,
 )
 
-from improved_msf_parser import ImprovedMSFParser, OutputType, ParsedOutput
+from msf_parser import MSFParser, OutputType, ParsedOutput
 
 __all__ = [
-    "ImprovedMSFParser",
+    "MSFParser",
     "OutputType",
     "ParsedOutput",
     "parse_search_results",

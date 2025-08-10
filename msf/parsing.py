@@ -1,7 +1,7 @@
 from typing import List, Dict
-from improved_msf_parser import ImprovedMSFParser, OutputType
+from msf_parser import MSFParser, OutputType
 
-_parser = ImprovedMSFParser()
+_parser = MSFParser()
 
 
 def parse_search_results(output: str) -> List[Dict[str, str]]:

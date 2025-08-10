@@ -877,11 +877,11 @@ async def resource_script_execution(ctx: Context, script_commands: List[str], wo
             "commands": script_commands
         }, indent=2)
 
-# Import improved parser
-from improved_msf_parser import ImprovedMSFParser, OutputType
+# Import parser
+from msf_parser import MSFParser, OutputType
 
 # Initialize global parser
-msf_parser = ImprovedMSFParser()
+msf_parser = MSFParser()
 
 # Legacy parsing helper functions have been centralized in msf.parsing to reduce duplication.
 
