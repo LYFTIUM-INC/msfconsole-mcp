@@ -14,7 +14,6 @@ Combined with the 5 core ecosystem tools, this provides complete
 """
 
 import asyncio
-import json
 import subprocess
 import time
 import logging
@@ -22,19 +21,13 @@ import os
 import tempfile
 import shutil
 import random
-import string
-from typing import Dict, Any, List, Optional, Union, Tuple
+from typing import Dict, Any, List, Optional, Union
 from dataclasses import dataclass
 from enum import Enum
-from pathlib import Path
-import xml.etree.ElementTree as ET
-import zipfile
-import tarfile
-import threading
 import base64
 
 # Import base functionality
-from msf import MSFConsoleStableWrapper, OperationStatus, OperationResult
+from msf import MSFConsoleStableWrapper, OperationStatus
 from msf import EcosystemResult
 
 # Set up logging

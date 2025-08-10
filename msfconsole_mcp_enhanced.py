@@ -11,9 +11,11 @@ import asyncio
 import logging
 import json
 import sys
-import os
-from typing import Dict, Any, Optional, List
+from typing import Dict, Optional, List
 from dataclasses import asdict
+
+# Import parser at top for availability and import ordering
+from msf_parser import MSFParser, OutputType
 
 # Import MCP SDK
 try:
@@ -37,10 +39,10 @@ logger = logging.getLogger(__name__)
 
 # Import our enhanced modules
 try:
-    from msf_rpc_manager import MSFRPCManager, RPCConfig
-    from msf_dual_mode import MSFDualModeHandler, ExecutionResult
+    from msf_rpc_manager import RPCConfig  # noqa: F401
+    from msf_dual_mode import MSFDualModeHandler  # noqa: F401
     from msf_security import MSFSecurityManager
-    from msf_config import get_config
+    from msf_config import get_config  # noqa: F401
     from msf_init import get_initializer
 except ImportError as e:
     logger.error(f"Failed to import enhanced modules: {e}")
@@ -100,7 +102,7 @@ async def ensure_initialized():
         try:
             # Initialize Metasploit framework first
             logger.info("Initializing Metasploit framework...")
-            initializer = await asyncio.wait_for(get_initializer(), timeout=30)
+            _ = await asyncio.wait_for(get_initializer(), timeout=30)
             
             # Initialize security manager
             try:
@@ -760,7 +762,7 @@ async def payload_generation(ctx: Context, payload_type: str, options: Dict[str,
                     command_parts.extend(["-f", output_format])
                 
                 # Execute msfvenom externally
-                msfvenom_command = " ".join(command_parts)
+                _ = " ".join(command_parts)  # command string for logging if needed
                 proc_result = subprocess.run(
                     command_parts,
                     capture_output=True,
@@ -876,9 +878,6 @@ async def resource_script_execution(ctx: Context, script_commands: List[str], wo
             "error": str(e),
             "commands": script_commands
         }, indent=2)
-
-# Import parser
-from msf_parser import MSFParser, OutputType
 
 # Initialize global parser
 msf_parser = MSFParser()

@@ -25,14 +25,9 @@ import time
 import logging
 import os
 import tempfile
-import shutil
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from enum import Enum
-from pathlib import Path
-import xml.etree.ElementTree as ET
-import csv
-import base64
 import hashlib
 
 # Import base functionality from existing stable integration

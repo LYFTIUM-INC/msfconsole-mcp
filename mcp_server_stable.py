@@ -12,13 +12,12 @@ import json
 import logging
 import sys
 import os
-from typing import Dict, Any, List, Optional
-from dataclasses import asdict
+from typing import Dict, Any, List
 
 # Add the current directory to Python path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from msf import MSFConsoleStableWrapper, OperationStatus, OperationResult
+from msf import MSFConsoleStableWrapper, OperationStatus
 from msf import MSFExtendedTools, ExtendedOperationResult
 from msf import MSFFinalFiveTools, FinalOperationResult
 from msf import MSFEcosystemTools, EcosystemResult
@@ -538,8 +537,8 @@ class MSFConsoleMCPServer:
                         "iterations": {"type": "integer", "default": 1, "description": "Number of encoding iterations"},
                         "bad_chars": {"type": "string", "description": "Characters to avoid"},
                         "template": {"type": "string", "description": "Custom executable template"},
-                        "keep_template": {"type": "boolean", "default": false, "description": "Preserve template functionality"},
-                        "smallest": {"type": "boolean", "default": false, "description": "Generate smallest possible payload"},
+                        "keep_template": {"type": "boolean", "default": False, "description": "Preserve template functionality"},
+                        "smallest": {"type": "boolean", "default": False, "description": "Generate smallest possible payload"},
                         "nop_sled": {"type": "integer", "default": 0, "description": "NOP sled size"},
                         "output_file": {"type": "string", "description": "Output file path"}
                     },
@@ -571,7 +570,7 @@ class MSFConsoleMCPServer:
                         "action": {"type": "string", "enum": ["start", "stop", "status", "call", "auth"], "description": "RPC action"},
                         "host": {"type": "string", "default": "127.0.0.1", "description": "RPC server host"},
                         "port": {"type": "integer", "default": 55553, "description": "RPC server port"},
-                        "ssl": {"type": "boolean", "default": true, "description": "Use SSL encryption"},
+                        "ssl": {"type": "boolean", "default": True, "description": "Use SSL encryption"},
                         "auth_token": {"type": "string", "description": "Authentication token"},
                         "method": {"type": "string", "description": "RPC method to call"},
                         "params": {"type": "array", "description": "Method parameters"},
@@ -592,7 +591,7 @@ class MSFConsoleMCPServer:
                         "command": {"type": "string", "description": "Command to execute"},
                         "file_path": {"type": "string", "description": "File path for upload/download"},
                         "destination": {"type": "string", "description": "Destination path"},
-                        "interactive_mode": {"type": "boolean", "default": false, "description": "Enable interactive mode"}
+                        "interactive_mode": {"type": "boolean", "default": False, "description": "Enable interactive mode"}
                     },
                     "required": ["session_id", "action"]
                 }
@@ -625,7 +624,7 @@ class MSFConsoleMCPServer:
                         "obfuscation_level": {"type": "integer", "default": 1, "minimum": 1, "maximum": 5, "description": "Obfuscation intensity"},
                         "custom_encoder": {"type": "string", "description": "Custom encoder to use"},
                         "output_format": {"type": "string", "default": "exe", "description": "Output format"},
-                        "test_mode": {"type": "boolean", "default": false, "description": "Test against local AV"}
+                        "test_mode": {"type": "boolean", "default": False, "description": "Test against local AV"}
                     },
                     "required": ["payload"]
                 }
@@ -637,11 +636,11 @@ class MSFConsoleMCPServer:
                     "type": "object",
                     "properties": {
                         "action": {"type": "string", "enum": ["create", "start", "stop", "template", "monitor", "migrate", "orchestrate"], "description": "Action to perform"},
-                        "listener_config": {"type": "object", "description": "Listener configuration", "additionalProperties": true},
+                        "listener_config": {"type": "object", "description": "Listener configuration", "additionalProperties": True},
                         "template_name": {"type": "string", "description": "Template name for listener"},
-                        "persistence": {"type": "boolean", "default": false, "description": "Enable persistent listeners"},
-                        "auto_migrate": {"type": "boolean", "default": false, "description": "Auto-migrate sessions"},
-                        "multi_handler": {"type": "boolean", "default": false, "description": "Use multi-handler"}
+                        "persistence": {"type": "boolean", "default": False, "description": "Enable persistent listeners"},
+                        "auto_migrate": {"type": "boolean", "default": False, "description": "Auto-migrate sessions"},
+                        "multi_handler": {"type": "boolean", "default": False, "description": "Use multi-handler"}
                     },
                     "required": ["action"]
                 }

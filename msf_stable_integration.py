@@ -10,17 +10,13 @@ Priority: Stability (95%+ success rate) > Performance gains.
 import asyncio
 import logging
 import time
-import json
 import subprocess
 import os
-import signal
-import threading
-from typing import Dict, Any, List, Optional, Tuple, Union
+from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
 from pathlib import Path
 import psutil
 from enum import Enum
-import queue
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -188,7 +184,7 @@ class MSFConsoleStableWrapper:
                 timeout=5
             )
             return result.returncode == 0
-        except:
+        except Exception:
             return False
     
     async def _check_system_resources(self) -> bool:
@@ -199,7 +195,7 @@ class MSFConsoleStableWrapper:
             
             # Require at least 2GB free memory and 2 CPU cores
             return memory.available > 2 * 1024 * 1024 * 1024 and cpu_count >= 2
-        except:
+        except Exception:
             return False
     
     async def _check_directories(self) -> bool:
@@ -215,7 +211,7 @@ class MSFConsoleStableWrapper:
             
             # At least one MSF directory should exist
             return any(path.exists() and path.is_dir() for path in msf_dirs)
-        except:
+        except Exception:
             return False
     
     async def _check_network_connectivity(self) -> bool:
@@ -228,7 +224,7 @@ class MSFConsoleStableWrapper:
                 timeout=5
             )
             return result.returncode == 0
-        except:
+        except Exception:
             return True  # Don't fail initialization for network issues
     
     async def _attempt_standard_initialization(self) -> bool:
@@ -958,7 +954,7 @@ if __name__ == "__main__":
                 
                 # Final status
                 status = msf.get_status()
-                print(f"\\nFinal Status:")
+                print("\nFinal Status:")
                 print(f"Stability Rating: {status['stability_rating']}/10")
                 print(f"Success Rate: {status['performance_stats']['success_rate']:.1%}")
             

@@ -6,9 +6,8 @@ Implements 15 additional MCP tools to achieve 95% MSFConsole coverage.
 Built on top of the existing MSFConsoleStableWrapper foundation.
 """
 
-import asyncio
-import json
 import logging
+import json
 import time
 from typing import Dict, Any, List, Optional, Union
 from dataclasses import dataclass, field

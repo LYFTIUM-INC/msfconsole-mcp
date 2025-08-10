@@ -7,7 +7,7 @@ This file contains all configurable settings for the MSFConsole MCP server.
 
 import os
 import shutil
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 # Find msfconsole and msfvenom in PATH
 MSFCONSOLE_PATH = shutil.which("msfconsole") or "/usr/bin/msfconsole"

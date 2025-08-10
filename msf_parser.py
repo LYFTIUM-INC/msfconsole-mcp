@@ -10,8 +10,7 @@ Comprehensive parsing system for Metasploit Console output with:
 """
 
 import re
-import json
-from typing import Dict, List, Any, Optional, Tuple, Union
+from typing import Dict, List, Any, Optional, Union
 from enum import Enum
 from dataclasses import dataclass
 

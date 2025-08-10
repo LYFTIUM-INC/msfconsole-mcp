@@ -17,10 +17,9 @@ Total Coverage: 28 tools = 100% MSFConsole functionality
 """
 
 import asyncio
-import json
 import time
 import logging
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from enum import Enum
 
@@ -327,7 +326,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
             elif mod_action == ModuleStackAction.POP_MODULE:
                 command = "popm"
                 if self.module_stack:
-                    module = self.module_stack.pop()
+                    _ = self.module_stack.pop()
             
             elif mod_action == ModuleStackAction.PUSH_MODULE:
                 if module_path:
@@ -452,7 +451,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
                 lport = handler_config.get('LPORT', '4444')
                 
                 commands = [
-                    f"use exploit/multi/handler",
+                    "use exploit/multi/handler",
                     f"set PAYLOAD {payload}",
                     f"set LHOST {lhost}",
                     f"set LPORT {lport}",

@@ -5,10 +5,9 @@ SafeContext for MSFConsole MCP
 Enhanced error handling and context management for MCP
 """
 
-import sys
 import logging
 import traceback
-from typing import Any, Optional, Callable, Dict, Type, TypeVar, cast
+from typing import Optional, Callable, TypeVar, cast
 
 # Setup logging
 logger = logging.getLogger(__name__)
