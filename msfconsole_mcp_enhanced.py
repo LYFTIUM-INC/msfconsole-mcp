@@ -325,8 +325,9 @@ async def search_modules(ctx: Context, query: str, module_type: str = "all") -> 
                 "parsing_metadata": parsed_result.metadata
             }, indent=2)
         else:
-            # Fallback to legacy parsing or raw output
-            parsed_modules = _parse_search_results(result.output)
+            # Fallback to adapter-based parsing or raw output
+            from msf.parsing import parse_search_results
+            parsed_modules = parse_search_results(result.output)
             return json.dumps({
                 "success": result.success,
                 "query": query,
@@ -394,7 +395,8 @@ async def manage_workspaces(ctx: Context, action: str, workspace_name: str = "")
         # Parse workspace list if listing
         workspaces = []
         if action == "list" and result.success:
-            workspaces = _parse_workspace_list(result.output)
+            from msf.parsing import parse_workspace_list
+            workspaces = parse_workspace_list(result.output)
         
         return json.dumps({
             "success": result.success,
@@ -456,14 +458,15 @@ async def database_operations(ctx: Context, operation: str, filters: str = "") -
         # Parse results based on operation type
         parsed_data = []
         if result.success:
+            from msf.parsing import parse_hosts, parse_services, parse_vulns, parse_sessions
             if operation == "hosts":
-                parsed_data = _parse_hosts(result.output)
+                parsed_data = parse_hosts(result.output)
             elif operation == "services":
-                parsed_data = _parse_services(result.output)
+                parsed_data = parse_services(result.output)
             elif operation == "vulns":
-                parsed_data = _parse_vulns(result.output)
+                parsed_data = parse_vulns(result.output)
             elif operation == "sessions":
-                parsed_data = _parse_sessions(result.output)
+                parsed_data = parse_sessions(result.output)
         
         return json.dumps({
             "success": result.success,
@@ -541,7 +544,8 @@ async def session_management(ctx: Context, action: str, session_id: str = "", co
         # Parse session list if listing
         sessions = []
         if action == "list" and result.success:
-            sessions = _parse_sessions(result.output)
+            from msf.parsing import parse_sessions
+            sessions = parse_sessions(result.output)
         
         return json.dumps({
             "success": result.success,
@@ -879,187 +883,7 @@ from improved_msf_parser import ImprovedMSFParser, OutputType
 # Initialize global parser
 msf_parser = ImprovedMSFParser()
 
-# Legacy parsing helper functions (keeping for compatibility)
-
-def _parse_search_results(output: str) -> List[Dict[str, str]]:
-    """Parse module search results."""
-    modules = []
-    lines = output.split('\n')
-    
-    for line in lines:
-        line = line.strip()
-        if not line or line.startswith('#') or '===' in line or 'Matching Modules' in line:
-            continue
-        
-        # Skip header lines and separators
-        if line.startswith('Name') or line.startswith('----') or line.startswith('='):
-            continue
-            
-        # Try to parse module line - typical format:
-        # module_name    disclosure_date    rank    description
-        parts = line.split(None, 3)  # Split into max 4 parts
-        if len(parts) >= 1:
-            modules.append({
-                "name": parts[0],
-                "disclosure_date": parts[1] if len(parts) > 1 else "",
-                "rank": parts[2] if len(parts) > 2 else "",
-                "description": parts[3] if len(parts) > 3 else ""
-            })
-    
-    return modules
-
-def _parse_workspace_list(output: str) -> List[Dict[str, str]]:
-    """Parse workspace list output."""
-    workspaces = []
-    lines = output.split('\n')
-    
-    for line in lines:
-        line = line.strip()
-        # Skip empty lines and headers
-        if not line or line == 'Workspaces' or line.startswith('='):
-            continue
-            
-        # Current workspace is marked with *
-        current = line.startswith('*')
-        name = line.lstrip('* ').strip()
-        if name:
-            workspaces.append({
-                "name": name,
-                "current": current
-            })
-    
-    return workspaces
-
-def _parse_hosts(output: str) -> List[Dict[str, str]]:
-    """Parse hosts command output."""
-    hosts = []
-    lines = output.split('\n')
-    
-    # Find header line
-    header_idx = -1
-    for i, line in enumerate(lines):
-        if 'address' in line.lower() and 'name' in line.lower():
-            header_idx = i
-            break
-    
-    if header_idx == -1:
-        return hosts
-    
-    # Parse data lines
-    for line in lines[header_idx + 2:]:  # Skip header and separator
-        line = line.strip()
-        if line and not line.startswith('='):
-            parts = line.split(None, 6)
-            if len(parts) >= 2:
-                host = {
-                    "address": parts[0],
-                    "mac": parts[1] if len(parts) > 1 else "",
-                    "name": parts[2] if len(parts) > 2 else "",
-                    "os_family": parts[3] if len(parts) > 3 else "",
-                    "os_flavor": parts[4] if len(parts) > 4 else "",
-                    "os_sp": parts[5] if len(parts) > 5 else "",
-                    "purpose": parts[6] if len(parts) > 6 else "",
-                    "info": parts[7] if len(parts) > 7 else ""
-                }
-                hosts.append(host)
-    
-    return hosts
-
-def _parse_services(output: str) -> List[Dict[str, str]]:
-    """Parse services command output."""
-    services = []
-    lines = output.split('\n')
-    
-    # Find header line
-    header_idx = -1
-    for i, line in enumerate(lines):
-        if 'port' in line.lower() and 'proto' in line.lower():
-            header_idx = i
-            break
-    
-    if header_idx == -1:
-        return services
-    
-    # Parse data lines
-    for line in lines[header_idx + 2:]:  # Skip header and separator
-        line = line.strip()
-        if line and not line.startswith('='):
-            parts = line.split(None, 5)
-            if len(parts) >= 4:
-                service = {
-                    "host": parts[0],
-                    "port": parts[1],
-                    "proto": parts[2],
-                    "name": parts[3],
-                    "state": parts[4] if len(parts) > 4 else "",
-                    "info": parts[5] if len(parts) > 5 else ""
-                }
-                services.append(service)
-    
-    return services
-
-def _parse_vulns(output: str) -> List[Dict[str, str]]:
-    """Parse vulnerabilities command output."""
-    vulns = []
-    lines = output.split('\n')
-    
-    # Find header line
-    header_idx = -1
-    for i, line in enumerate(lines):
-        if 'host' in line.lower() and 'name' in line.lower():
-            header_idx = i
-            break
-    
-    if header_idx == -1:
-        return vulns
-    
-    # Parse data lines
-    for line in lines[header_idx + 2:]:  # Skip header and separator
-        line = line.strip()
-        if line and not line.startswith('='):
-            parts = line.split(None, 3)
-            if len(parts) >= 3:
-                vuln = {
-                    "host": parts[0],
-                    "name": parts[1],
-                    "refs": parts[2],
-                    "info": parts[3] if len(parts) > 3 else ""
-                }
-                vulns.append(vuln)
-    
-    return vulns
-
-def _parse_sessions(output: str) -> List[Dict[str, str]]:
-    """Parse sessions command output."""
-    sessions = []
-    lines = output.split('\n')
-    
-    # Find header line
-    header_idx = -1
-    for i, line in enumerate(lines):
-        if 'id' in line.lower() and 'type' in line.lower():
-            header_idx = i
-            break
-    
-    if header_idx == -1:
-        return sessions
-    
-    # Parse data lines
-    for line in lines[header_idx + 2:]:  # Skip header and separator
-        line = line.strip()
-        if line and not line.startswith('-'):
-            parts = line.split(None, 4)
-            if len(parts) >= 3:
-                session = {
-                    "id": parts[0],
-                    "name": parts[1],
-                    "type": parts[2],
-                    "information": parts[3] if len(parts) > 3 else "",
-                    "connection": parts[4] if len(parts) > 4 else ""
-                }
-                sessions.append(session)
-    
-    return sessions
+# Legacy parsing helper functions have been centralized in msf.parsing to reduce duplication.
 
 # Startup and cleanup handlers will be handled in main()
 
