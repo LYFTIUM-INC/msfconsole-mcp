@@ -1,3 +1,18 @@
+[project]
+name = "msf-mcp-server"
+version = "0.1.0"
+description = "Metasploit Framework MCP Server: organized tools and parsing with CI and tests"
+authors = [{ name = "Team", email = "team@example.com" }]
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["metasploit", "mcp", "security", "red-team"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: POSIX :: Linux",
+]
+
 [tool.coverage.run]
 branch = false
 source = ["."]
