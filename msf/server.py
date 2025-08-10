@@ -23,6 +23,8 @@ except ImportError as e:
     sys.stderr.write("Please install the MCP SDK: pip install mcp\n")
     sys.exit(1)
 
+from .security_utils import is_command_allowed
+
 # Logging configuration via env
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 LOG_FORMAT = os.getenv("LOG_FORMAT", "plain")  # plain|json
@@ -189,6 +191,16 @@ async def execute_msf_command(
             command = command.replace("\x00", "").replace("\r", "").strip()
             if len(command) > 1000:
                 command = command[:1000]
+            # Fallback policy allowlist when no security manager is present
+            if not is_command_allowed(command):
+                return json.dumps(
+                    {
+                        "success": False,
+                        "error": "Command not allowed by fallback policy",
+                        "command": command,
+                    },
+                    indent=2,
+                )
         try:
             await asyncio.wait_for(ensure_initialized(), timeout=60)
         except asyncio.TimeoutError:

@@ -1108,7 +1108,93 @@ class ConsoleExtendedTools(MSFConsoleStableWrapper):
                 error=str(e),
             )
 
-    # ==================== TOOL 9: Pivot Manager ====================
+    # ==================== TOOL 9: Loot Manager ====================
+
+    async def msf_loot_manager(
+        self,
+        action: str,
+        timeout: Optional[float] = None,
+    ) -> ExtendedToolResult:
+        """
+        Manage and query loot table.
+        Actions: list
+        """
+        start_time = time.time()
+        try:
+            if action == "list":
+                result = await self.execute_command("loot", timeout)
+                if result.status == OperationStatus.SUCCESS:
+                    items = self._parse_loot(result.data.get("stdout", ""))
+                    return ExtendedToolResult(
+                        status=OperationStatus.SUCCESS,
+                        data={"loot": items, "count": len(items)},
+                        execution_time=result.execution_time,
+                    )
+                return ExtendedToolResult(
+                    status=result.status,
+                    data=result.data,
+                    execution_time=result.execution_time,
+                    error=result.error,
+                )
+            return ExtendedToolResult(
+                status=OperationStatus.FAILURE,
+                data=None,
+                execution_time=time.time() - start_time,
+                error=f"Invalid action: {action}",
+            )
+        except Exception as e:
+            logger.error(f"Loot manager error: {e}")
+            return ExtendedToolResult(
+                status=OperationStatus.FAILURE,
+                data=None,
+                execution_time=time.time() - start_time,
+                error=str(e),
+            )
+
+    # ==================== TOOL 10: Notes Manager ====================
+
+    async def msf_notes_manager(
+        self,
+        action: str,
+        timeout: Optional[float] = None,
+    ) -> ExtendedToolResult:
+        """
+        Manage and query notes table.
+        Actions: list
+        """
+        start_time = time.time()
+        try:
+            if action == "list":
+                result = await self.execute_command("notes", timeout)
+                if result.status == OperationStatus.SUCCESS:
+                    stdout = result.data.get("stdout", "") if result.data else ""
+                    return ExtendedToolResult(
+                        status=OperationStatus.SUCCESS,
+                        data={"raw": stdout},
+                        execution_time=result.execution_time,
+                    )
+                return ExtendedToolResult(
+                    status=result.status,
+                    data=result.data,
+                    execution_time=result.execution_time,
+                    error=result.error,
+                )
+            return ExtendedToolResult(
+                status=OperationStatus.FAILURE,
+                data=None,
+                execution_time=time.time() - start_time,
+                error=f"Invalid action: {action}",
+            )
+        except Exception as e:
+            logger.error(f"Notes manager error: {e}")
+            return ExtendedToolResult(
+                status=OperationStatus.FAILURE,
+                data=None,
+                execution_time=time.time() - start_time,
+                error=str(e),
+            )
+
+    # ==================== TOOL 11: Pivot Manager ====================
 
     async def msf_pivot_manager(
         self,
@@ -1237,7 +1323,7 @@ class ConsoleExtendedTools(MSFConsoleStableWrapper):
                 error=str(e),
             )
 
-    # ==================== TOOL 10: Resource Executor ====================
+    # ==================== TOOL 12: Resource Executor ====================
 
     async def msf_resource_executor(
         self, script_path: str = None, commands: List[str] = None, timeout: Optional[float] = None
@@ -1310,7 +1396,7 @@ class ConsoleExtendedTools(MSFConsoleStableWrapper):
                 error=str(e),
             )
 
-    # ==================== TOOL 11: Loot Collector ====================
+    # ==================== TOOL 13: Loot Collector ====================
 
     async def msf_loot_collector(
         self,
@@ -1421,7 +1507,7 @@ class ConsoleExtendedTools(MSFConsoleStableWrapper):
                 error=str(e),
             )
 
-    # ==================== TOOL 12: Vulnerability Tracker ====================
+    # ==================== TOOL 14: Vulnerability Tracker ====================
 
     async def msf_vulnerability_tracker(
         self,
@@ -1570,7 +1656,7 @@ class ConsoleExtendedTools(MSFConsoleStableWrapper):
                 error=str(e),
             )
 
-    # ==================== TOOL 13: Reporting Engine ====================
+    # ==================== TOOL 15: Reporting Engine ====================
 
     async def msf_reporting_engine(
         self,
@@ -1678,7 +1764,7 @@ class ConsoleExtendedTools(MSFConsoleStableWrapper):
                 error=str(e),
             )
 
-    # ==================== TOOL 14: Automation Builder ====================
+    # ==================== TOOL 16: Automation Builder ====================
 
     async def msf_automation_builder(
         self,
@@ -1798,7 +1884,7 @@ class ConsoleExtendedTools(MSFConsoleStableWrapper):
                 error=str(e),
             )
 
-    # ==================== TOOL 15: Plugin Manager ====================
+    # ==================== TOOL 17: Plugin Manager ====================
 
     async def msf_plugin_manager(
         self,
