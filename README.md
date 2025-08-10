@@ -36,7 +36,7 @@ pip3 install -r requirements.txt
 
 3. **Configure for Claude Code:**
 ```bash
-claude mcp add msfconsole python3 msfconsole_mcp.py
+claude mcp add msfconsole python3 msfconsole_mcp.py  # entrypoint wraps msf.server
 ```
 
 ### Verification
