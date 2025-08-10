@@ -11,10 +11,10 @@ from msf_parser import MSFParser, OutputType, ParsedOutput
 
 # Re-export core wrapper and tool classes to provide a stable package API
 from .core import MSFConsoleStableWrapper, OperationStatus, OperationResult
-from .tools_extended import MSFExtendedTools, ExtendedOperationResult
-from .tools_final import MSFFinalFiveTools, FinalOperationResult
-from .tools_ecosystem import MSFEcosystemTools, EcosystemResult
-from .tools_advanced import MSFAdvancedTools, AdvancedResult
+from .tools_extended import ConsoleExtendedTools, ExtendedToolResult
+from .tools_final import ConsoleAdministrationTools, AdministrationToolResult
+from .tools_ecosystem import MetasploitEcosystemTools, EcosystemToolResult
+from .tools_advanced import EcosystemAdvancedTools, AdvancedToolResult
 
 __all__ = [
     # parsing
@@ -31,12 +31,12 @@ __all__ = [
     "MSFConsoleStableWrapper",
     "OperationStatus",
     "OperationResult",
-    "MSFExtendedTools",
-    "ExtendedOperationResult",
-    "MSFFinalFiveTools",
-    "FinalOperationResult",
-    "MSFEcosystemTools",
-    "EcosystemResult",
-    "MSFAdvancedTools",
-    "AdvancedResult",
+    "ConsoleExtendedTools",
+    "ExtendedToolResult",
+    "ConsoleAdministrationTools",
+    "AdministrationToolResult",
+    "MetasploitEcosystemTools",
+    "EcosystemToolResult",
+    "EcosystemAdvancedTools",
+    "AdvancedToolResult",
 ]

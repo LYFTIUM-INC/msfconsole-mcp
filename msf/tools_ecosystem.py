@@ -99,14 +99,14 @@ class EvasionTechnique(Enum):
 
 
 @dataclass
-class EcosystemResult(OperationResult):
+class EcosystemToolResult(OperationResult):
     tool_name: Optional[str] = None
     output_file: Optional[str] = None
     artifacts: Optional[List[str]] = None
     metadata: Optional[Dict[str, Any]] = None
 
 
-class MSFEcosystemTools(MSFConsoleStableWrapper):
+class MetasploitEcosystemTools(MSFConsoleStableWrapper):
     def __init__(self):
         super().__init__()
         self.rpc_daemon = None
@@ -127,7 +127,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
         smallest: bool = False,
         nop_sled: int = 0,
         output_file: Optional[str] = None,
-    ) -> EcosystemResult:
+    ) -> EcosystemToolResult:
         start_time = time.time()
         try:
             cmd = ["msfvenom", "-p", payload, "-f", format_type]
@@ -160,7 +160,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
                 file_hash = (
                     self._get_file_hash(output_file) if os.path.exists(output_file) else None
                 )
-                return EcosystemResult(
+                return EcosystemToolResult(
                     status=OperationStatus.SUCCESS,
                     data={
                         "payload": payload,
@@ -180,14 +180,14 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
                         "template_used": template is not None,
                     },
                 )
-            return EcosystemResult(
+            return EcosystemToolResult(
                 status=OperationStatus.FAILURE,
                 error=f"msfvenom failed: {result.stderr}",
                 execution_time=time.time() - start_time,
                 tool_name="msf_venom_direct",
             )
         except subprocess.TimeoutExpired:
-            return EcosystemResult(
+            return EcosystemToolResult(
                 status=OperationStatus.FAILURE,
                 error="msfvenom operation timed out",
                 execution_time=time.time() - start_time,
@@ -195,7 +195,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
             )
         except Exception as exc:  # noqa: BLE001 broad for tool boundary
             logger.error("MSF Venom Direct error: %s", exc)
-            return EcosystemResult(
+            return EcosystemToolResult(
                 status=OperationStatus.FAILURE,
                 error=str(exc),
                 execution_time=time.time() - start_time,
@@ -210,13 +210,13 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
         backup_file: Optional[str] = None,
         sql_query: Optional[str] = None,
         optimize_level: int = 1,
-    ) -> EcosystemResult:
+    ) -> EcosystemToolResult:
         start_time = time.time()
         try:
             try:
                 db_action = DatabaseAction(action)
             except ValueError:
-                return EcosystemResult(
+                return EcosystemToolResult(
                     status=OperationStatus.FAILURE,
                     error=f"Invalid database action: {action}",
                     execution_time=time.time() - start_time,
@@ -245,7 +245,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
                 cmd = ["pg_dump", "-h", "localhost", "-U", "msf", "-d", "msf", "-f", backup_file]
             elif db_action == DatabaseAction.RESTORE:
                 if not backup_file:
-                    return EcosystemResult(
+                    return EcosystemToolResult(
                         status=OperationStatus.FAILURE,
                         error="Restore requires backup file",
                         execution_time=time.time() - start_time,
@@ -254,7 +254,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
                 cmd = ["psql", "-h", "localhost", "-U", "msf", "-d", "msf", "-f", backup_file]
             elif db_action == DatabaseAction.QUERY:
                 if not sql_query:
-                    return EcosystemResult(
+                    return EcosystemToolResult(
                         status=OperationStatus.FAILURE,
                         error="Query action requires SQL query",
                         execution_time=time.time() - start_time,
@@ -275,7 +275,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
                 cmd = ["psql", "-h", "localhost", "-U", "msf", "-d", "msf", "-c", query]
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
             if result.returncode == 0:
-                return EcosystemResult(
+                return EcosystemToolResult(
                     status=OperationStatus.SUCCESS,
                     data={
                         "action": action,
@@ -287,14 +287,14 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
                     tool_name="msf_database_direct",
                     output_file=backup_file if db_action == DatabaseAction.BACKUP else None,
                 )
-            return EcosystemResult(
+            return EcosystemToolResult(
                 status=OperationStatus.FAILURE,
                 error=f"Database operation failed: {result.stderr}",
                 execution_time=time.time() - start_time,
                 tool_name="msf_database_direct",
             )
         except subprocess.TimeoutExpired:
-            return EcosystemResult(
+            return EcosystemToolResult(
                 status=OperationStatus.FAILURE,
                 error="Database operation timed out",
                 execution_time=time.time() - start_time,
@@ -302,7 +302,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
             )
         except Exception as exc:  # noqa: BLE001
             logger.error("MSF Database Direct error: %s", exc)
-            return EcosystemResult(
+            return EcosystemToolResult(
                 status=OperationStatus.FAILURE,
                 error=str(exc),
                 execution_time=time.time() - start_time,
@@ -320,13 +320,13 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
         params: Optional[List] = None,
         username: str = "msf",
         password: Optional[str] = None,
-    ) -> EcosystemResult:
+    ) -> EcosystemToolResult:
         start_time = time.time()
         try:
             try:
                 rpc_action = RPCAction(action)
             except ValueError:
-                return EcosystemResult(
+                return EcosystemToolResult(
                     status=OperationStatus.FAILURE,
                     error=f"Invalid RPC action: {action}",
                     execution_time=time.time() - start_time,
@@ -346,7 +346,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
                 await asyncio.sleep(2)
                 if process.poll() is None:
                     self.rpc_daemon = process
-                    return EcosystemResult(
+                    return EcosystemToolResult(
                         status=OperationStatus.SUCCESS,
                         data={
                             "action": "start",
@@ -359,7 +359,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
                         tool_name="msf_rpc_interface",
                     )
                 stdout, stderr = process.communicate()
-                return EcosystemResult(
+                return EcosystemToolResult(
                     status=OperationStatus.FAILURE,
                     error=f"RPC daemon failed to start: {stderr}",
                     execution_time=time.time() - start_time,
@@ -369,13 +369,13 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
                 if self.rpc_daemon and self.rpc_daemon.poll() is None:
                     self.rpc_daemon.terminate()
                     self.rpc_daemon.wait(timeout=10)
-                    return EcosystemResult(
+                    return EcosystemToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"action": "stop", "message": "RPC daemon stopped"},
                         execution_time=time.time() - start_time,
                         tool_name="msf_rpc_interface",
                     )
-                return EcosystemResult(
+                return EcosystemToolResult(
                     status=OperationStatus.FAILURE,
                     error="No RPC daemon running",
                     execution_time=time.time() - start_time,
@@ -385,7 +385,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
                 status = (
                     "running" if (self.rpc_daemon and self.rpc_daemon.poll() is None) else "stopped"
                 )
-                return EcosystemResult(
+                return EcosystemToolResult(
                     status=OperationStatus.SUCCESS,
                     data={
                         "action": "status",
@@ -397,13 +397,13 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
                 )
             if rpc_action == RPCAction.CALL:
                 if not method:
-                    return EcosystemResult(
+                    return EcosystemToolResult(
                         status=OperationStatus.FAILURE,
                         error="RPC call requires method",
                         execution_time=time.time() - start_time,
                         tool_name="msf_rpc_interface",
                     )
-                return EcosystemResult(
+                return EcosystemToolResult(
                     status=OperationStatus.SUCCESS,
                     data={
                         "action": "call",
@@ -416,7 +416,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
                 )
         except Exception as exc:  # noqa: BLE001
             logger.error("MSF RPC Interface error: %s", exc)
-            return EcosystemResult(
+            return EcosystemToolResult(
                 status=OperationStatus.FAILURE,
                 error=str(exc),
                 execution_time=time.time() - start_time,
@@ -431,7 +431,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
         file_path: Optional[str] = None,
         destination: Optional[str] = None,
         interactive_mode: bool = False,
-    ) -> EcosystemResult:
+    ) -> EcosystemToolResult:
         start_time = time.time()
         try:
             commands = []
@@ -446,7 +446,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
                     ]
             elif action == "upload":
                 if not file_path or not destination:
-                    return EcosystemResult(
+                    return EcosystemToolResult(
                         status=OperationStatus.FAILURE,
                         error="Upload requires file_path and destination",
                         execution_time=time.time() - start_time,
@@ -459,7 +459,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
                 ]
             elif action == "download":
                 if not file_path:
-                    return EcosystemResult(
+                    return EcosystemToolResult(
                         status=OperationStatus.FAILURE,
                         error="Download requires file_path",
                         execution_time=time.time() - start_time,
@@ -482,7 +482,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
             elif action == "migrate":
                 pid = command if command else "explorer.exe"
                 commands = [f"sessions -i {session_id}", f"migrate -N {pid}", "background"]
-            results: List[EcosystemResult] = []
+            results: List[EcosystemToolResult] = []
             for cmd in commands:
                 result = await self.execute_command(cmd, timeout=60)
                 results.append(result)  # type: ignore[arg-type]
@@ -491,7 +491,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
             combined_output: Dict[str, Any] = {}
             for i, result in enumerate(results):
                 combined_output[f"step_{i+1}"] = getattr(result, "data", None)
-            return EcosystemResult(
+            return EcosystemToolResult(
                 status=(
                     OperationStatus.SUCCESS
                     if all(r.status == OperationStatus.SUCCESS for r in results)
@@ -508,7 +508,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
             )
         except Exception as exc:  # noqa: BLE001
             logger.error("MSF Interactive Session error: %s", exc)
-            return EcosystemResult(
+            return EcosystemToolResult(
                 status=OperationStatus.FAILURE,
                 error=str(exc),
                 execution_time=time.time() - start_time,
@@ -523,13 +523,13 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
         output_file: Optional[str] = None,
         filters: Optional[Dict] = None,
         include_sections: Optional[List[str]] = None,
-    ) -> EcosystemResult:
+    ) -> EcosystemToolResult:
         start_time = time.time()
         try:
             try:
                 format_type = ReportFormat(report_type)
             except ValueError:
-                return EcosystemResult(
+                return EcosystemToolResult(
                     status=OperationStatus.FAILURE,
                     error=f"Invalid report type: {report_type}",
                     execution_time=time.time() - start_time,
@@ -566,7 +566,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
                 content = self._generate_text_report(report_data, workspace)
             with open(output_file, "w", encoding="utf-8") as f:
                 f.write(content)
-            return EcosystemResult(
+            return EcosystemToolResult(
                 status=OperationStatus.SUCCESS,
                 data={
                     "report_type": report_type,
@@ -583,7 +583,7 @@ class MSFEcosystemTools(MSFConsoleStableWrapper):
             )
         except Exception as exc:  # noqa: BLE001
             logger.error("MSF Report Generator error: %s", exc)
-            return EcosystemResult(
+            return EcosystemToolResult(
                 status=OperationStatus.FAILURE,
                 error=str(exc),
                 execution_time=time.time() - start_time,
@@ -727,7 +727,7 @@ Detailed technical findings are available in the full assessment report."""
 
 
 async def msf_venom_direct(**kwargs):
-    tools = MSFEcosystemTools()
+    tools = MetasploitEcosystemTools()
     try:
         await tools.initialize()
         return await tools.msf_venom_direct(**kwargs)
@@ -736,7 +736,7 @@ async def msf_venom_direct(**kwargs):
 
 
 async def msf_database_direct(**kwargs):
-    tools = MSFEcosystemTools()
+    tools = MetasploitEcosystemTools()
     try:
         await tools.initialize()
         return await tools.msf_database_direct(**kwargs)
@@ -745,7 +745,7 @@ async def msf_database_direct(**kwargs):
 
 
 async def msf_rpc_interface(**kwargs):
-    tools = MSFEcosystemTools()
+    tools = MetasploitEcosystemTools()
     try:
         await tools.initialize()
         return await tools.msf_rpc_interface(**kwargs)
@@ -754,7 +754,7 @@ async def msf_rpc_interface(**kwargs):
 
 
 async def msf_interactive_session(**kwargs):
-    tools = MSFEcosystemTools()
+    tools = MetasploitEcosystemTools()
     try:
         await tools.initialize()
         return await tools.msf_interactive_session(**kwargs)
@@ -763,7 +763,7 @@ async def msf_interactive_session(**kwargs):
 
 
 async def msf_report_generator(**kwargs):
-    tools = MSFEcosystemTools()
+    tools = MetasploitEcosystemTools()
     try:
         await tools.initialize()
         return await tools.msf_report_generator(**kwargs)

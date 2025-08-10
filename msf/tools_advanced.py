@@ -28,7 +28,7 @@ import base64
 
 # Import base functionality
 from .core import MSFConsoleStableWrapper, OperationStatus
-from .tools_ecosystem import EcosystemResult
+from .tools_ecosystem import EcosystemToolResult
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ class IntegrationTool(Enum):
 
 
 @dataclass
-class AdvancedResult(EcosystemResult):
+class AdvancedToolResult(EcosystemToolResult):
     """Extended result for advanced tools."""
 
     configuration: Optional[Dict[str, Any]] = None
@@ -78,7 +78,7 @@ class AdvancedResult(EcosystemResult):
     performance_metrics: Optional[Dict[str, float]] = None
 
 
-class MSFAdvancedTools(MSFConsoleStableWrapper):
+class EcosystemAdvancedTools(MSFConsoleStableWrapper):
     """
     Advanced MSF ecosystem tools providing enterprise-grade features
     for complete penetration testing workflow automation.
@@ -101,7 +101,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
         custom_encoder: Optional[str] = None,
         output_format: str = "exe",
         test_mode: bool = False,
-    ) -> AdvancedResult:
+    ) -> AdvancedToolResult:
         """
         Advanced evasion suite for AV bypass and detection evasion.
 
@@ -115,7 +115,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
             test_mode: Test against local AV
 
         Returns:
-            AdvancedResult with evasion results
+            AdvancedToolResult with evasion results
         """
         start_time = time.time()
 
@@ -157,7 +157,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
             if test_mode:
                 av_test_results = await self._test_av_evasion(generated_files)
 
-            return AdvancedResult(
+            return AdvancedToolResult(
                 status=OperationStatus.SUCCESS,
                 data={
                     "payload": payload,
@@ -175,7 +175,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"MSF Evasion Suite error: {e}")
-            return AdvancedResult(
+            return AdvancedToolResult(
                 status=OperationStatus.FAILURE,
                 error=str(e),
                 execution_time=time.time() - start_time,
@@ -450,7 +450,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
         persistence: bool = False,
         auto_migrate: bool = False,
         multi_handler: bool = False,
-    ) -> AdvancedResult:
+    ) -> AdvancedToolResult:
         """
         Advanced listener management and orchestration.
 
@@ -463,7 +463,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
             multi_handler: Use multi-handler
 
         Returns:
-            AdvancedResult with listener orchestration results
+            AdvancedToolResult with listener orchestration results
         """
         start_time = time.time()
 
@@ -484,7 +484,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
                 return await self._orchestrate_multiple_listeners(listener_config)
 
             else:
-                return AdvancedResult(
+                return AdvancedToolResult(
                     status=OperationStatus.FAILURE,
                     error=f"Unknown action: {action}",
                     execution_time=time.time() - start_time,
@@ -493,7 +493,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"MSF Listener Orchestrator error: {e}")
-            return AdvancedResult(
+            return AdvancedToolResult(
                 status=OperationStatus.FAILURE,
                 error=str(e),
                 execution_time=time.time() - start_time,
@@ -502,7 +502,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
 
     async def _create_listener(
         self, config: Dict, persistent: bool, auto_migrate: bool
-    ) -> AdvancedResult:
+    ) -> AdvancedToolResult:
         """Create advanced listener configuration."""
         start_time = time.time()
 
@@ -554,7 +554,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
             "commands": commands,
         }
 
-        return AdvancedResult(
+        return AdvancedToolResult(
             status=OperationStatus.SUCCESS,
             data={
                 "listener_id": listener_id,
@@ -578,7 +578,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
         source_workspace: Optional[str] = None,
         automation_rules: Optional[Dict] = None,
         archive_path: Optional[str] = None,
-    ) -> AdvancedResult:
+    ) -> AdvancedToolResult:
         """
         Enterprise workspace automation and management.
 
@@ -591,7 +591,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
             archive_path: Path for archive operations
 
         Returns:
-            AdvancedResult with workspace automation results
+            AdvancedToolResult with workspace automation results
         """
         start_time = time.time()
 
@@ -615,7 +615,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
                 return await self._cleanup_workspace(workspace_name, automation_rules)
 
             else:
-                return AdvancedResult(
+                return AdvancedToolResult(
                     status=OperationStatus.FAILURE,
                     error=f"Unknown action: {action}",
                     execution_time=time.time() - start_time,
@@ -624,7 +624,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"MSF Workspace Automator error: {e}")
-            return AdvancedResult(
+            return AdvancedToolResult(
                 status=OperationStatus.FAILURE,
                 error=str(e),
                 execution_time=time.time() - start_time,
@@ -633,14 +633,14 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
 
     async def _create_workspace_template(
         self, name: str, template: Optional[str]
-    ) -> AdvancedResult:
+    ) -> AdvancedToolResult:
         """Create reusable workspace template."""
         start_time = time.time()
 
         # Create workspace
         result = await self.execute_command(f"workspace -a {name}")
         if result.status != OperationStatus.SUCCESS:
-            return AdvancedResult(
+            return AdvancedToolResult(
                 status=OperationStatus.FAILURE,
                 error=f"Failed to create workspace: {result.error}",
                 execution_time=time.time() - start_time,
@@ -675,7 +675,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
             "config": template_config,
         }
 
-        return AdvancedResult(
+        return AdvancedToolResult(
             status=OperationStatus.SUCCESS,
             data={"workspace": name, "template": template, "config": template_config},
             execution_time=time.time() - start_time,
@@ -692,7 +692,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
         custom_encoder: Optional[str] = None,
         bad_chars: Optional[str] = None,
         optimization: str = "size",
-    ) -> AdvancedResult:
+    ) -> AdvancedToolResult:
         """
         Custom encoder factory for advanced payload encoding.
 
@@ -705,7 +705,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
             optimization: Optimization target (size, speed, evasion)
 
         Returns:
-            AdvancedResult with encoding results
+            AdvancedToolResult with encoding results
         """
         start_time = time.time()
 
@@ -720,7 +720,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
 
                 if result.returncode != 0:
-                    return AdvancedResult(
+                    return AdvancedToolResult(
                         status=OperationStatus.FAILURE,
                         error=f"Failed to generate payload: {result.stderr}",
                         execution_time=time.time() - start_time,
@@ -766,7 +766,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
                 output_file = tmp.name
                 tmp.write(current_data)
 
-            return AdvancedResult(
+            return AdvancedToolResult(
                 status=OperationStatus.SUCCESS,
                 data={
                     "original_size": len(payload_bytes),
@@ -786,7 +786,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"MSF Encoder Factory error: {e}")
-            return AdvancedResult(
+            return AdvancedToolResult(
                 status=OperationStatus.FAILURE,
                 error=str(e),
                 execution_time=time.time() - start_time,
@@ -852,7 +852,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
         target: Optional[str] = None,
         sync_mode: str = "import",
         custom_parser: Optional[str] = None,
-    ) -> AdvancedResult:
+    ) -> AdvancedToolResult:
         """
         Bridge for integrating third-party security tools.
 
@@ -866,7 +866,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
             custom_parser: Custom parser script
 
         Returns:
-            AdvancedResult with integration results
+            AdvancedToolResult with integration results
         """
         start_time = time.time()
 
@@ -886,7 +886,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
                 )
 
             else:
-                return AdvancedResult(
+                return AdvancedToolResult(
                     status=OperationStatus.FAILURE,
                     error=f"Unsupported tool: {tool}",
                     execution_time=time.time() - start_time,
@@ -895,7 +895,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"MSF Integration Bridge error: {e}")
-            return AdvancedResult(
+            return AdvancedToolResult(
                 status=OperationStatus.FAILURE,
                 error=str(e),
                 execution_time=time.time() - start_time,
@@ -909,13 +909,13 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
         file_path: Optional[str],
         target: Optional[str],
         sync_mode: str,
-    ) -> AdvancedResult:
+    ) -> AdvancedToolResult:
         """Integrate with Nmap."""
         start_time = time.time()
 
         if action == "scan_and_import":
             if not target:
-                return AdvancedResult(
+                return AdvancedToolResult(
                     status=OperationStatus.FAILURE,
                     error="Nmap scan requires target",
                     execution_time=time.time() - start_time,
@@ -935,7 +935,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
                 # Import into MSF
                 import_result = await self.execute_command(f"db_import {file_path}")
 
-                return AdvancedResult(
+                return AdvancedToolResult(
                     status=OperationStatus.SUCCESS,
                     data={
                         "tool": "nmap",
@@ -950,7 +950,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
                     output_file=file_path,
                 )
             else:
-                return AdvancedResult(
+                return AdvancedToolResult(
                     status=OperationStatus.FAILURE,
                     error=f"Nmap scan failed: {result.stderr}",
                     execution_time=time.time() - start_time,
@@ -959,7 +959,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
 
         elif action == "import":
             if not file_path:
-                return AdvancedResult(
+                return AdvancedToolResult(
                     status=OperationStatus.FAILURE,
                     error="Import requires file path",
                     execution_time=time.time() - start_time,
@@ -969,7 +969,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
             # Import existing nmap file
             result = await self.execute_command(f"db_import {file_path}")
 
-            return AdvancedResult(
+            return AdvancedToolResult(
                 status=result.status,
                 data={
                     "tool": "nmap",
@@ -1001,7 +1001,7 @@ class MSFAdvancedTools(MSFConsoleStableWrapper):
 # Convenience functions
 async def msf_evasion_suite(**kwargs):
     """Direct access to MSF Evasion Suite."""
-    tools = MSFAdvancedTools()
+    tools = EcosystemAdvancedTools()
     try:
         await tools.initialize()
         return await tools.msf_evasion_suite(**kwargs)
@@ -1011,7 +1011,7 @@ async def msf_evasion_suite(**kwargs):
 
 async def msf_listener_orchestrator(**kwargs):
     """Direct access to MSF Listener Orchestrator."""
-    tools = MSFAdvancedTools()
+    tools = EcosystemAdvancedTools()
     try:
         await tools.initialize()
         return await tools.msf_listener_orchestrator(**kwargs)
@@ -1021,7 +1021,7 @@ async def msf_listener_orchestrator(**kwargs):
 
 async def msf_workspace_automator(**kwargs):
     """Direct access to MSF Workspace Automator."""
-    tools = MSFAdvancedTools()
+    tools = EcosystemAdvancedTools()
     try:
         await tools.initialize()
         return await tools.msf_workspace_automator(**kwargs)
@@ -1031,7 +1031,7 @@ async def msf_workspace_automator(**kwargs):
 
 async def msf_encoder_factory(**kwargs):
     """Direct access to MSF Encoder Factory."""
-    tools = MSFAdvancedTools()
+    tools = EcosystemAdvancedTools()
     try:
         await tools.initialize()
         return await tools.msf_encoder_factory(**kwargs)
@@ -1041,7 +1041,7 @@ async def msf_encoder_factory(**kwargs):
 
 async def msf_integration_bridge(**kwargs):
     """Direct access to MSF Integration Bridge."""
-    tools = MSFAdvancedTools()
+    tools = EcosystemAdvancedTools()
     try:
         await tools.initialize()
         return await tools.msf_integration_bridge(**kwargs)
@@ -1057,7 +1057,7 @@ if __name__ == "__main__":
         print("🚀 Testing MSF Advanced Tools")
         print("=" * 50)
 
-        tools = MSFAdvancedTools()
+        tools = EcosystemAdvancedTools()
         await tools.initialize()
 
         try:

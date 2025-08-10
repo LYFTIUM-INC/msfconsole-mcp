@@ -24,7 +24,7 @@ logger = logging.getLogger("msf_extended_tools")
 
 # Extended result for additional metadata
 @dataclass
-class ExtendedOperationResult(OperationResult):
+class ExtendedToolResult(OperationResult):
     """Extended result with additional metadata"""
 
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -70,7 +70,7 @@ class DatabaseAction(Enum):
     EXPORT = "export"
 
 
-class MSFExtendedTools(MSFConsoleStableWrapper):
+class ConsoleExtendedTools(MSFConsoleStableWrapper):
     """Extended MSF tools implementation"""
 
     def __init__(self):
@@ -86,7 +86,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         module_path: str = None,
         options: Dict[str, str] = None,
         timeout: Optional[float] = None,
-    ) -> ExtendedOperationResult:
+    ) -> ExtendedToolResult:
         """
         Comprehensive module management tool.
         Actions: use, info, options, set, unset, check, run, exploit, back, reload
@@ -98,7 +98,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             try:
                 module_action = ModuleAction(action.lower())
             except ValueError:
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.FAILURE,
                     data=None,
                     execution_time=time.time() - start_time,
@@ -108,7 +108,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             # Execute action
             if module_action == ModuleAction.USE:
                 if not module_path:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -118,7 +118,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command(f"use {module_path}", timeout)
                 if result.status == OperationStatus.SUCCESS:
                     self.module_context = module_path
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"module": module_path, "loaded": True},
                         execution_time=result.execution_time,
@@ -132,7 +132,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 if result.status == OperationStatus.SUCCESS:
                     # Parse module info
                     info = self._parse_module_info(result.data.get("stdout", ""))
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data=info,
                         execution_time=result.execution_time,
@@ -144,7 +144,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 if result.status == OperationStatus.SUCCESS:
                     # Parse options
                     options_data = self._parse_options(result.data.get("stdout", ""))
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data=options_data,
                         execution_time=result.execution_time,
@@ -152,7 +152,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
             elif module_action == ModuleAction.SET:
                 if not options:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -170,7 +170,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                     else:
                         errors.append(f"{key}: {result.error}")
 
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.SUCCESS if not errors else OperationStatus.PARTIAL,
                     data={"set_count": success_count, "errors": errors},
                     execution_time=time.time() - start_time,
@@ -179,7 +179,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             elif module_action in [ModuleAction.RUN, ModuleAction.EXPLOIT]:
                 # Check if module is loaded
                 if not self.module_context:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -193,7 +193,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 if result.status == OperationStatus.SUCCESS:
                     # Check for session creation
                     session_info = self._extract_session_info(result.data.get("stdout", ""))
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"executed": True, "session": session_info},
                         execution_time=result.execution_time,
@@ -206,7 +206,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 if result.status == OperationStatus.SUCCESS:
                     # Parse check result
                     check_result = self._parse_check_result(result.data.get("stdout", ""))
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data=check_result,
                         execution_time=result.execution_time,
@@ -217,7 +217,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
                 if result.status == OperationStatus.SUCCESS:
                     self.module_context = None
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"context": "msf"},
                         execution_time=result.execution_time,
@@ -226,14 +226,14 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             elif module_action == ModuleAction.RELOAD:
                 result = await self.execute_command("reload_all", timeout or 60.0)
 
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=result.status,
                     data={"reloaded": result.status == OperationStatus.SUCCESS},
                     execution_time=result.execution_time,
                 )
 
             # Fallback for unhandled actions
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=result.status,
                 data=result.data,
                 execution_time=result.execution_time,
@@ -242,7 +242,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Module manager error: {e}")
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -257,7 +257,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         action: str = "list",
         command: str = None,
         timeout: Optional[float] = None,
-    ) -> ExtendedOperationResult:
+    ) -> ExtendedToolResult:
         """
         Advanced session interaction tool.
         Actions: list, interact, execute, upgrade, kill, background, detach
@@ -269,7 +269,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             try:
                 session_action = SessionAction(action.lower())
             except ValueError:
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.FAILURE,
                     data=None,
                     execution_time=time.time() - start_time,
@@ -281,7 +281,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
                 if result.status == OperationStatus.SUCCESS:
                     sessions = self._parse_sessions(result.data.get("stdout", ""))
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"sessions": sessions, "count": len(sessions)},
                         execution_time=result.execution_time,
@@ -289,7 +289,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
             elif session_action == SessionAction.INTERACT:
                 if session_id is None:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -302,7 +302,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
                 if result.status == OperationStatus.SUCCESS:
                     self.session_context[session_id] = True
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"session_id": session_id, "interactive": True},
                         execution_time=result.execution_time,
@@ -311,7 +311,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
             elif session_action == SessionAction.EXECUTE:
                 if session_id is None or command is None:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -323,7 +323,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command(cmd, timeout)
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={
                             "session_id": session_id,
@@ -335,7 +335,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
             elif session_action == SessionAction.UPGRADE:
                 if session_id is None:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -346,7 +346,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command(f"sessions -u {session_id}", timeout or 60.0)
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"session_id": session_id, "upgraded": True},
                         execution_time=result.execution_time,
@@ -354,7 +354,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
             elif session_action == SessionAction.KILL:
                 if session_id is None:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -366,14 +366,14 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 if result.status == OperationStatus.SUCCESS:
                     if session_id in self.session_context:
                         del self.session_context[session_id]
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"session_id": session_id, "killed": True},
                         execution_time=result.execution_time,
                     )
 
             # Return result for other actions
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=result.status,
                 data=result.data,
                 execution_time=result.execution_time,
@@ -382,7 +382,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Session interact error: {e}")
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -398,7 +398,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         filters: Dict[str, Any] = None,
         data: Dict[str, Any] = None,
         timeout: Optional[float] = None,
-    ) -> ExtendedOperationResult:
+    ) -> ExtendedToolResult:
         """
         Database operations for hosts, services, vulns, creds, loot.
         Actions: list, add, update, delete, search, export
@@ -410,7 +410,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             try:
                 db_action = DatabaseAction(action.lower())
             except ValueError:
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.FAILURE,
                     data=None,
                     execution_time=time.time() - start_time,
@@ -420,7 +420,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             # Validate table
             valid_tables = ["hosts", "services", "vulns", "creds", "loot", "notes"]
             if table not in valid_tables:
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.FAILURE,
                     data=None,
                     execution_time=time.time() - start_time,
@@ -438,7 +438,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
                 if result.status == OperationStatus.SUCCESS:
                     parsed_data = self._parse_database_output(table, result.data.get("stdout", ""))
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={table: parsed_data, "count": len(parsed_data)},
                         execution_time=result.execution_time,
@@ -446,7 +446,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
             elif db_action == DatabaseAction.ADD:
                 if not data:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -458,7 +458,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command(cmd, timeout)
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"added": True, "table": table},
                         execution_time=result.execution_time,
@@ -466,7 +466,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
             elif db_action == DatabaseAction.DELETE:
                 if not filters:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -479,7 +479,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command(cmd, timeout)
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"deleted": True, "table": table, "filters": filters},
                         execution_time=result.execution_time,
@@ -497,7 +497,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
                 if result.status == OperationStatus.SUCCESS:
                     parsed_data = self._parse_database_output(table, result.data.get("stdout", ""))
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"results": parsed_data, "count": len(parsed_data)},
                         execution_time=result.execution_time,
@@ -511,14 +511,14 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command(cmd, timeout or 60.0)
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"exported": True, "format": export_format},
                         execution_time=result.execution_time,
                     )
 
             # Return result
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=result.status,
                 data=result.data,
                 execution_time=result.execution_time,
@@ -527,7 +527,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Database query error: {e}")
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -544,7 +544,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         options: Dict[str, str],
         auto_execute: bool = False,
         timeout: Optional[float] = None,
-    ) -> ExtendedOperationResult:
+    ) -> ExtendedToolResult:
         """
         Complete exploitation workflow automation.
         Combines: search → use → set options → check → exploit → session management
@@ -564,7 +564,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             )
 
             if use_result.status != OperationStatus.SUCCESS:
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.FAILURE,
                     data={"workflow": workflow_steps},
                     execution_time=time.time() - start_time,
@@ -631,7 +631,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                         }
                     )
 
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={
                             "workflow": workflow_steps,
@@ -642,7 +642,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                         metadata={"exploit": exploit_module, "target": target, "payload": payload},
                     )
             else:
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.SUCCESS,
                     data={
                         "workflow": workflow_steps,
@@ -653,7 +653,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 )
 
             # Return partial success if we got this far
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.PARTIAL,
                 data={"workflow": workflow_steps},
                 execution_time=time.time() - start_time,
@@ -661,7 +661,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Exploit chain error: {e}")
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data={"workflow": workflow_steps},
                 execution_time=time.time() - start_time,
@@ -676,7 +676,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         module: str,
         options: Dict[str, str] = None,
         timeout: Optional[float] = None,
-    ) -> ExtendedOperationResult:
+    ) -> ExtendedToolResult:
         """
         Post-exploitation module execution.
         Modules: gather/*, escalate/*, manage/*
@@ -688,7 +688,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             use_result = await self.msf_module_manager("use", module)
 
             if use_result.status != OperationStatus.SUCCESS:
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.FAILURE,
                     data=None,
                     execution_time=time.time() - start_time,
@@ -699,7 +699,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             session_result = await self.execute_command(f"set SESSION {session_id}")
 
             if session_result.status != OperationStatus.SUCCESS:
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.FAILURE,
                     data=None,
                     execution_time=time.time() - start_time,
@@ -720,13 +720,13 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 output = run_result.data.get("stdout", "") if run_result.data else ""
                 post_data = self._parse_post_module_output(module, output)
 
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.SUCCESS,
                     data={"module": module, "session_id": session_id, "results": post_data},
                     execution_time=time.time() - start_time,
                 )
 
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=run_result.status,
                 data=run_result.data,
                 execution_time=time.time() - start_time,
@@ -735,7 +735,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Post exploitation error: {e}")
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -750,7 +750,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         payload: str = None,
         options: Dict[str, str] = None,
         timeout: Optional[float] = None,
-    ) -> ExtendedOperationResult:
+    ) -> ExtendedToolResult:
         """
         Payload handler management.
         Actions: start, stop, list, multi_handler
@@ -760,7 +760,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         try:
             if action == "start":
                 if not payload or not options:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -784,7 +784,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                         # Extract job ID
                         job_id = self._extract_job_id(handler_result.data.get("stdout", ""))
 
-                        return ExtendedOperationResult(
+                        return ExtendedToolResult(
                             status=OperationStatus.SUCCESS,
                             data={"handler_started": True, "job_id": job_id, "payload": payload},
                             execution_time=time.time() - start_time,
@@ -797,7 +797,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 if result.status == OperationStatus.SUCCESS:
                     jobs = self._parse_jobs(result.data.get("stdout", ""))
 
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"jobs": jobs, "count": len(jobs)},
                         execution_time=result.execution_time,
@@ -806,7 +806,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             elif action == "stop":
                 job_id = options.get("job_id") if options else None
                 if not job_id:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -816,7 +816,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command(f"jobs -k {job_id}", timeout)
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"stopped": True, "job_id": job_id},
                         execution_time=result.execution_time,
@@ -842,14 +842,14 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                     handler_result = await self.execute_command("exploit -j -z", timeout)
 
                     if handler_result.status == OperationStatus.SUCCESS:
-                        return ExtendedOperationResult(
+                        return ExtendedToolResult(
                             status=OperationStatus.SUCCESS,
                             data={"multi_handler": True, "persistent": True},
                             execution_time=time.time() - start_time,
                         )
 
             # Invalid action
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -858,7 +858,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Handler manager error: {e}")
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -873,7 +873,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         targets: str,
         options: Dict[str, str] = None,
         timeout: Optional[float] = None,
-    ) -> ExtendedOperationResult:
+    ) -> ExtendedToolResult:
         """
         Integrated scanning capabilities.
         Types: port, smb, http, ssh, ftp, snmp, discovery
@@ -893,7 +893,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             }
 
             if scan_type not in scanner_modules:
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.FAILURE,
                     data=None,
                     execution_time=time.time() - start_time,
@@ -905,7 +905,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             use_result = await self.msf_module_manager("use", module)
 
             if use_result.status != OperationStatus.SUCCESS:
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.FAILURE,
                     data=None,
                     execution_time=time.time() - start_time,
@@ -928,7 +928,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 output = scan_result.data.get("stdout", "") if scan_result.data else ""
                 scan_data = self._parse_scan_output(scan_type, output)
 
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.SUCCESS,
                     data={
                         "scan_type": scan_type,
@@ -939,7 +939,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                     execution_time=time.time() - start_time,
                 )
 
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=scan_result.status,
                 data=scan_result.data,
                 execution_time=time.time() - start_time,
@@ -948,7 +948,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Scanner suite error: {e}")
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -963,7 +963,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         cred_data: Dict[str, Any] = None,
         filters: Dict[str, Any] = None,
         timeout: Optional[float] = None,
-    ) -> ExtendedOperationResult:
+    ) -> ExtendedToolResult:
         """
         Credential management.
         Actions: add, list, crack, validate, export
@@ -985,7 +985,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 if result.status == OperationStatus.SUCCESS:
                     creds = self._parse_credentials(result.data.get("stdout", ""))
 
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"credentials": creds, "count": len(creds)},
                         execution_time=result.execution_time,
@@ -993,7 +993,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
             elif action == "add":
                 if not cred_data:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -1014,7 +1014,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command(cmd, timeout)
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"added": True, "credential": cred_data},
                         execution_time=result.execution_time,
@@ -1023,7 +1023,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             elif action == "validate":
                 # Validate credentials using appropriate module
                 if not cred_data or "service" not in cred_data:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -1041,7 +1041,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
                 service = cred_data["service"].lower()
                 if service not in validation_modules:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -1065,7 +1065,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 validate_result = await self.msf_module_manager("run", timeout=timeout)
 
                 if validate_result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={
                             "validated": True,
@@ -1081,7 +1081,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command(f"creds -o /tmp/creds.{export_format}", timeout)
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={
                             "exported": True,
@@ -1092,7 +1092,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                     )
 
             # Invalid action
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -1101,7 +1101,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Credential manager error: {e}")
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -1116,7 +1116,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         action: str,
         options: Dict[str, Any] = None,
         timeout: Optional[float] = None,
-    ) -> ExtendedOperationResult:
+    ) -> ExtendedToolResult:
         """
         Network pivoting and routing.
         Actions: add_route, list_routes, portfwd, socks_proxy
@@ -1126,7 +1126,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         try:
             if action == "add_route":
                 if not options or "subnet" not in options:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -1140,7 +1140,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command(cmd, timeout)
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={
                             "route_added": True,
@@ -1157,7 +1157,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 if result.status == OperationStatus.SUCCESS:
                     routes = self._parse_routes(result.data.get("stdout", ""))
 
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"routes": routes, "count": len(routes)},
                         execution_time=result.execution_time,
@@ -1165,7 +1165,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
             elif action == "portfwd":
                 if not options:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -1187,7 +1187,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command(cmd, timeout)
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"portfwd_added": True, "session": session_id, "forwarding": options},
                         execution_time=result.execution_time,
@@ -1210,7 +1210,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                     proxy_result = await self.execute_command("run -j", timeout)
 
                     if proxy_result.status == OperationStatus.SUCCESS:
-                        return ExtendedOperationResult(
+                        return ExtendedToolResult(
                             status=OperationStatus.SUCCESS,
                             data={
                                 "socks_proxy": True,
@@ -1221,7 +1221,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                         )
 
             # Invalid action
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -1230,7 +1230,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Pivot manager error: {e}")
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -1241,7 +1241,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
     async def msf_resource_executor(
         self, script_path: str = None, commands: List[str] = None, timeout: Optional[float] = None
-    ) -> ExtendedOperationResult:
+    ) -> ExtendedToolResult:
         """
         Resource script execution.
         Can use file path or command list.
@@ -1254,7 +1254,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command(f"resource {script_path}", timeout or 60.0)
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={
                             "executed": True,
@@ -1288,13 +1288,13 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 # Determine overall status
                 failed = any(r["status"] == "failure" for r in results)
 
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.FAILURE if failed else OperationStatus.SUCCESS,
                     data={"executed": not failed, "commands": len(commands), "results": results},
                     execution_time=total_time,
                 )
             else:
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.FAILURE,
                     data=None,
                     execution_time=time.time() - start_time,
@@ -1303,7 +1303,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Resource executor error: {e}")
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -1318,7 +1318,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         loot_type: str = None,
         action: str = "list",
         timeout: Optional[float] = None,
-    ) -> ExtendedOperationResult:
+    ) -> ExtendedToolResult:
         """
         Data collection and management.
         Types: files, screenshots, keystrokes, passwords
@@ -1338,7 +1338,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 if result.status == OperationStatus.SUCCESS:
                     loot_items = self._parse_loot(result.data.get("stdout", ""))
 
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"loot": loot_items, "count": len(loot_items)},
                         execution_time=result.execution_time,
@@ -1346,7 +1346,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
             elif action == "collect":
                 if not session_id:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -1372,7 +1372,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                     )
 
                     if post_result.status == OperationStatus.SUCCESS:
-                        return ExtendedOperationResult(
+                        return ExtendedToolResult(
                             status=OperationStatus.SUCCESS,
                             data={
                                 "collected": True,
@@ -1384,7 +1384,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                         )
                 else:
                     # General loot collection
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={
                             "message": "Use specific loot_type for targeted collection",
@@ -1398,14 +1398,14 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command("loot -o /tmp/loot_export.txt", timeout)
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"exported": True, "path": "/tmp/loot_export.txt"},
                         execution_time=result.execution_time,
                     )
 
             # Invalid action
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -1414,7 +1414,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Loot collector error: {e}")
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -1429,7 +1429,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         vuln_data: Dict[str, Any] = None,
         filters: Dict[str, Any] = None,
         timeout: Optional[float] = None,
-    ) -> ExtendedOperationResult:
+    ) -> ExtendedToolResult:
         """
         Vulnerability management.
         Actions: import, analyze, correlate, report
@@ -1451,7 +1451,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 if result.status == OperationStatus.SUCCESS:
                     vulns = self._parse_vulnerabilities(result.data.get("stdout", ""))
 
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"vulnerabilities": vulns, "count": len(vulns)},
                         execution_time=result.execution_time,
@@ -1459,7 +1459,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
             elif action == "import":
                 if not vuln_data or "file" not in vuln_data:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -1472,7 +1472,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 )
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"imported": True, "file": vuln_data["file"]},
                         execution_time=result.execution_time,
@@ -1500,7 +1500,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                                     }
                                 )
 
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={
                             "analyzed": True,
@@ -1516,7 +1516,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command("analyze", timeout or 60.0)
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={
                             "correlated": True,
@@ -1547,14 +1547,14 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                         "by_service": self._count_by_service(vulns),
                     }
 
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"report": report_data},
                         execution_time=time.time() - start_time,
                     )
 
             # Invalid action
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -1563,7 +1563,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Vulnerability tracker error: {e}")
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -1578,7 +1578,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         filters: Dict[str, Any] = None,
         format: str = "json",
         timeout: Optional[float] = None,
-    ) -> ExtendedOperationResult:
+    ) -> ExtendedToolResult:
         """
         Comprehensive reporting.
         Types: hosts, services, vulns, exploitation_timeline, executive_summary
@@ -1653,7 +1653,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                     "recommendations": self._generate_recommendations(vulns_result.data),
                 }
             else:
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.FAILURE,
                     data=None,
                     execution_time=time.time() - start_time,
@@ -1663,7 +1663,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             # Format report
             formatted_report = self._format_report(report_data, format)
 
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.SUCCESS,
                 data={"report": formatted_report, "format": format, "type": report_type},
                 execution_time=time.time() - start_time,
@@ -1671,7 +1671,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Reporting engine error: {e}")
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -1686,7 +1686,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         steps: List[Dict[str, Any]],
         execute: bool = False,
         timeout: Optional[float] = None,
-    ) -> ExtendedOperationResult:
+    ) -> ExtendedToolResult:
         """
         Build and execute complex workflows.
         Example: recon → exploit → post-exploit → report
@@ -1697,7 +1697,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         try:
             # Validate workflow
             if not steps:
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.FAILURE,
                     data=None,
                     execution_time=time.time() - start_time,
@@ -1709,7 +1709,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
             for i, step in enumerate(steps):
                 if "tool" not in step or "params" not in step:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -1744,7 +1744,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                     elif tool == "report":
                         result = await self.msf_reporting_engine(**params)
                     else:
-                        result = ExtendedOperationResult(
+                        result = ExtendedToolResult(
                             status=OperationStatus.FAILURE,
                             data=None,
                             execution_time=0,
@@ -1771,7 +1771,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 # Determine overall status
                 failed = any(r["status"] == "failure" for r in workflow_results)
 
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.FAILURE if failed else OperationStatus.SUCCESS,
                     data={
                         "workflow": workflow_name,
@@ -1783,7 +1783,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 )
             else:
                 # Just return the workflow definition
-                return ExtendedOperationResult(
+                return ExtendedToolResult(
                     status=OperationStatus.SUCCESS,
                     data={"workflow": workflow_name, "executed": False, "script": workflow_script},
                     execution_time=time.time() - start_time,
@@ -1791,7 +1791,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Automation builder error: {e}")
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data={"workflow": workflow_name, "results": workflow_results},
                 execution_time=time.time() - start_time,
@@ -1806,7 +1806,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
         plugin_name: str = None,
         options: Dict[str, Any] = None,
         timeout: Optional[float] = None,
-    ) -> ExtendedOperationResult:
+    ) -> ExtendedToolResult:
         """
         Plugin management.
         Actions: load, unload, list, info
@@ -1822,7 +1822,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 if result.status == OperationStatus.SUCCESS:
                     plugins = self._parse_plugins(result.data.get("stdout", ""))
 
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"plugins": plugins, "loaded_count": len(plugins)},
                         execution_time=result.execution_time,
@@ -1830,7 +1830,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
             elif action == "load":
                 if not plugin_name:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -1846,7 +1846,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command(cmd, timeout)
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"loaded": True, "plugin": plugin_name, "options": options},
                         execution_time=result.execution_time,
@@ -1854,7 +1854,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
             elif action == "unload":
                 if not plugin_name:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         execution_time=time.time() - start_time,
@@ -1864,7 +1864,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                 result = await self.execute_command(f"unload {plugin_name}", timeout)
 
                 if result.status == OperationStatus.SUCCESS:
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"unloaded": True, "plugin": plugin_name},
                         execution_time=result.execution_time,
@@ -1873,7 +1873,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
             elif action == "info":
                 if not plugin_name:
                     # Show available plugins
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={
                             "available_plugins": [
@@ -1915,14 +1915,14 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
                     # Get plugin info
                     plugin_info = self._get_plugin_info(plugin_name)
 
-                    return ExtendedOperationResult(
+                    return ExtendedToolResult(
                         status=OperationStatus.SUCCESS,
                         data={"plugin": plugin_name, "info": plugin_info},
                         execution_time=time.time() - start_time,
                     )
 
             # Invalid action
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -1931,7 +1931,7 @@ class MSFExtendedTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Plugin manager error: {e}")
-            return ExtendedOperationResult(
+            return ExtendedToolResult(
                 status=OperationStatus.FAILURE,
                 data=None,
                 execution_time=time.time() - start_time,
@@ -2533,7 +2533,7 @@ if __name__ == "__main__":
 
     async def test_extended_tools():
         """Test the extended tools implementation"""
-        tools = MSFExtendedTools()
+        tools = ConsoleExtendedTools()
 
         # Initialize
         print("Initializing MSF Extended Tools...")

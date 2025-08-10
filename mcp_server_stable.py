@@ -18,10 +18,10 @@ from typing import Dict, Any, List
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from msf import MSFConsoleStableWrapper, OperationStatus
-from msf import MSFExtendedTools, ExtendedOperationResult
-from msf import MSFFinalFiveTools, FinalOperationResult
-from msf import MSFEcosystemTools, EcosystemResult
-from msf import MSFAdvancedTools, AdvancedResult
+from msf import ConsoleExtendedTools
+from msf import ConsoleAdministrationTools
+from msf import MetasploitEcosystemTools
+from msf import EcosystemAdvancedTools
 
 # Set up logging
 logging.basicConfig(
@@ -35,10 +35,10 @@ class MSFConsoleMCPServer:
 
     def __init__(self):
         self.msf = MSFConsoleStableWrapper()
-        self.extended_msf = MSFExtendedTools()
-        self.final_msf = MSFFinalFiveTools()
-        self.ecosystem_msf = MSFEcosystemTools()
-        self.advanced_msf = MSFAdvancedTools()
+        self.extended_msf = ConsoleExtendedTools()
+        self.final_msf = ConsoleAdministrationTools()
+        self.ecosystem_msf = MetasploitEcosystemTools()
+        self.advanced_msf = EcosystemAdvancedTools()
         self.initialized = False
         self.server_info = {
             "name": "msfconsole-complete",
@@ -1618,7 +1618,7 @@ class MSFConsoleMCPServer:
             logger.error(f"Extended tool error {tool_name}: {e}")
             return {"content": [{"type": "text", "text": f"Extended tool error: {str(e)}"}]}
 
-    def _format_extended_result(self, result: ExtendedOperationResult) -> Dict[str, Any]:
+    def _format_extended_result(self, result) -> Dict[str, Any]:
         """Format extended operation result for MCP response."""
         response_data = {
             "status": result.status.value,
@@ -1660,7 +1660,7 @@ class MSFConsoleMCPServer:
             logger.error(f"Final tool error {tool_name}: {e}")
             return {"content": [{"type": "text", "text": f"Final tool error: {str(e)}"}]}
 
-    def _format_final_result(self, result: FinalOperationResult) -> Dict[str, Any]:
+    def _format_final_result(self, result) -> Dict[str, Any]:
         """Format final operation result for MCP response."""
         response_data = {
             "status": result.status.value,
@@ -1706,7 +1706,7 @@ class MSFConsoleMCPServer:
             logger.error(f"Ecosystem tool error {tool_name}: {e}")
             return {"content": [{"type": "text", "text": f"Ecosystem tool error: {str(e)}"}]}
 
-    def _format_ecosystem_result(self, result: EcosystemResult) -> Dict[str, Any]:
+    def _format_ecosystem_result(self, result) -> Dict[str, Any]:
         """Format ecosystem operation result for MCP response."""
         response_data = {
             "status": result.status.value,
@@ -1755,7 +1755,7 @@ class MSFConsoleMCPServer:
             logger.error(f"Advanced tool error {tool_name}: {e}")
             return {"content": [{"type": "text", "text": f"Advanced tool error: {str(e)}"}]}
 
-    def _format_advanced_result(self, result: AdvancedResult) -> Dict[str, Any]:
+    def _format_advanced_result(self, result) -> Dict[str, Any]:
         """Format advanced operation result for MCP response."""
         response_data = {
             "status": result.status.value,

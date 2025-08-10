@@ -106,7 +106,7 @@ class DeveloperAction(Enum):
 
 
 @dataclass
-class FinalOperationResult(OperationResult):
+class AdministrationToolResult(OperationResult):
     """Extended result for final five tools."""
 
     command_executed: Optional[str] = None
@@ -114,7 +114,7 @@ class FinalOperationResult(OperationResult):
     system_state: Optional[Dict[str, Any]] = None
 
 
-class MSFFinalFiveTools(MSFConsoleStableWrapper):
+class ConsoleAdministrationTools(MSFConsoleStableWrapper):
     """
     Implementation of the final 5 tools for 100% MSFConsole coverage.
     Inherits from MSFConsoleStableWrapper for consistent architecture.
@@ -131,7 +131,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
     # Tool 1: MSF Core System Manager
     async def msf_core_system_manager(
         self, action: str, target: Optional[str] = None, options: Optional[Dict[str, Any]] = None
-    ) -> FinalOperationResult:
+    ) -> AdministrationToolResult:
         """
         Manage core MSF system functionality.
 
@@ -141,7 +141,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
             options: Additional options for the action
 
         Returns:
-            FinalOperationResult with system operation results
+            AdministrationToolResult with system operation results
         """
         start_time = time.time()
 
@@ -150,7 +150,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
             try:
                 sys_action = SystemAction(action)
             except ValueError:
-                return FinalOperationResult(
+                return AdministrationToolResult(
                     status=OperationStatus.FAILURE,
                     data=None,
                     error=f"Invalid system action: {action}",
@@ -175,7 +175,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
             elif sys_action == SystemAction.CONNECT:
                 if not target:
-                    return FinalOperationResult(
+                    return AdministrationToolResult(
                         status=OperationStatus.FAILURE,
                         data=None,
                         error="Connect action requires target",
@@ -199,7 +199,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
             elif sys_action == SystemAction.TIME:
                 if not target:
-                    return FinalOperationResult(
+                    return AdministrationToolResult(
                         status=OperationStatus.FAILURE,
                         error="Time action requires command to time",
                         execution_time=time.time() - start_time,
@@ -221,7 +221,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
             elif sys_action == SystemAction.GREP:
                 if not target or not options or "command" not in options:
-                    return FinalOperationResult(
+                    return AdministrationToolResult(
                         status=OperationStatus.FAILURE,
                         error="Grep requires pattern and command",
                         execution_time=time.time() - start_time,
@@ -230,7 +230,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
             elif sys_action == SystemAction.LOAD_PLUGIN:
                 if not target:
-                    return FinalOperationResult(
+                    return AdministrationToolResult(
                         status=OperationStatus.FAILURE,
                         error="Load requires plugin name",
                         execution_time=time.time() - start_time,
@@ -239,7 +239,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
             elif sys_action == SystemAction.UNLOAD_PLUGIN:
                 if not target:
-                    return FinalOperationResult(
+                    return AdministrationToolResult(
                         status=OperationStatus.FAILURE,
                         error="Unload requires plugin name",
                         execution_time=time.time() - start_time,
@@ -263,7 +263,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
                 "action": action,
             }
 
-            return FinalOperationResult(
+            return AdministrationToolResult(
                 status=result.status,
                 data=result.data,
                 error=result.error,
@@ -274,7 +274,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Core system manager error: {e}")
-            return FinalOperationResult(
+            return AdministrationToolResult(
                 status=OperationStatus.FAILURE,
                 error=str(e),
                 execution_time=time.time() - start_time,
@@ -287,7 +287,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
         module_path: Optional[str] = None,
         stack_operation: Optional[str] = None,
         show_type: Optional[str] = None,
-    ) -> FinalOperationResult:
+    ) -> AdministrationToolResult:
         """
         Advanced module stack and management operations.
 
@@ -298,7 +298,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
             show_type: Type of modules to show
 
         Returns:
-            FinalOperationResult with module operation results
+            AdministrationToolResult with module operation results
         """
         start_time = time.time()
 
@@ -307,7 +307,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
             try:
                 mod_action = ModuleStackAction(action)
             except ValueError:
-                return FinalOperationResult(
+                return AdministrationToolResult(
                     status=OperationStatus.FAILURE,
                     error=f"Invalid module action: {action}",
                     execution_time=time.time() - start_time,
@@ -346,7 +346,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
             elif mod_action == ModuleStackAction.ADD_FAVORITE:
                 if not module_path:
-                    return FinalOperationResult(
+                    return AdministrationToolResult(
                         status=OperationStatus.FAILURE,
                         error="Favorite requires module path",
                         execution_time=time.time() - start_time,
@@ -386,7 +386,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
             elif mod_action == ModuleStackAction.ADD_FAVORITE:
                 affected_items = self.favorites.copy()
 
-            return FinalOperationResult(
+            return AdministrationToolResult(
                 status=result.status,
                 data=result.data,
                 error=result.error,
@@ -397,7 +397,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Advanced module controller error: {e}")
-            return FinalOperationResult(
+            return AdministrationToolResult(
                 status=OperationStatus.FAILURE,
                 error=str(e),
                 execution_time=time.time() - start_time,
@@ -410,7 +410,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
         job_id: Optional[str] = None,
         handler_config: Optional[Dict[str, Any]] = None,
         job_name: Optional[str] = None,
-    ) -> FinalOperationResult:
+    ) -> AdministrationToolResult:
         """
         Manage background jobs and handlers.
 
@@ -421,7 +421,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
             job_name: New name for rename operation
 
         Returns:
-            FinalOperationResult with job operation results
+            AdministrationToolResult with job operation results
         """
         start_time = time.time()
 
@@ -430,7 +430,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
             try:
                 job_action = JobAction(action)
             except ValueError:
-                return FinalOperationResult(
+                return AdministrationToolResult(
                     status=OperationStatus.FAILURE,
                     error=f"Invalid job action: {action}",
                     execution_time=time.time() - start_time,
@@ -442,7 +442,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
             elif job_action == JobAction.START_HANDLER:
                 if not handler_config:
-                    return FinalOperationResult(
+                    return AdministrationToolResult(
                         status=OperationStatus.FAILURE,
                         error="Handler requires configuration",
                         execution_time=time.time() - start_time,
@@ -471,7 +471,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
             elif job_action == JobAction.KILL:
                 if not job_id:
-                    return FinalOperationResult(
+                    return AdministrationToolResult(
                         status=OperationStatus.FAILURE,
                         error="Kill requires job ID",
                         execution_time=time.time() - start_time,
@@ -480,7 +480,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
             elif job_action == JobAction.RENAME:
                 if not job_id or not job_name:
-                    return FinalOperationResult(
+                    return AdministrationToolResult(
                         status=OperationStatus.FAILURE,
                         error="Rename requires job ID and new name",
                         execution_time=time.time() - start_time,
@@ -500,7 +500,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
             if job_action != JobAction.START_HANDLER:
                 result = await self.execute_command(command)
             else:
-                result = FinalOperationResult(
+                result = AdministrationToolResult(
                     status=OperationStatus.SUCCESS,
                     data={"message": "Handler started successfully"},
                     execution_time=time.time() - start_time,
@@ -514,7 +514,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
                     # Simple job parsing - can be enhanced
                     self.active_jobs = {"raw_output": output}
 
-            return FinalOperationResult(
+            return AdministrationToolResult(
                 status=result.status,
                 data=result.data,
                 error=result.error,
@@ -525,7 +525,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Job manager error: {e}")
-            return FinalOperationResult(
+            return AdministrationToolResult(
                 status=OperationStatus.FAILURE,
                 error=str(e),
                 execution_time=time.time() - start_time,
@@ -539,7 +539,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
         file_path: Optional[str] = None,
         export_format: str = "xml",
         nmap_options: Optional[str] = None,
-    ) -> FinalOperationResult:
+    ) -> AdministrationToolResult:
         """
         Database administration and management.
 
@@ -551,7 +551,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
             nmap_options: Nmap scan options
 
         Returns:
-            FinalOperationResult with database operation results
+            AdministrationToolResult with database operation results
         """
         start_time = time.time()
 
@@ -560,7 +560,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
             try:
                 db_action = DatabaseAdminAction(action)
             except ValueError:
-                return FinalOperationResult(
+                return AdministrationToolResult(
                     status=OperationStatus.FAILURE,
                     error=f"Invalid database action: {action}",
                     execution_time=time.time() - start_time,
@@ -586,7 +586,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
             elif db_action == DatabaseAdminAction.IMPORT:
                 if not file_path:
-                    return FinalOperationResult(
+                    return AdministrationToolResult(
                         status=OperationStatus.FAILURE,
                         error="Import requires file path",
                         execution_time=time.time() - start_time,
@@ -595,7 +595,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
             elif db_action == DatabaseAdminAction.NMAP:
                 if not nmap_options:
-                    return FinalOperationResult(
+                    return AdministrationToolResult(
                         status=OperationStatus.FAILURE,
                         error="Nmap requires target options",
                         execution_time=time.time() - start_time,
@@ -631,7 +631,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
                 if output:
                     db_state["stats"] = output
 
-            return FinalOperationResult(
+            return AdministrationToolResult(
                 status=result.status,
                 data=result.data,
                 error=result.error,
@@ -642,7 +642,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Database admin controller error: {e}")
-            return FinalOperationResult(
+            return AdministrationToolResult(
                 status=OperationStatus.FAILURE,
                 error=str(e),
                 execution_time=time.time() - start_time,
@@ -656,7 +656,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
         command_to_time: Optional[str] = None,
         dns_config: Optional[Dict[str, Any]] = None,
         output_file: Optional[str] = None,
-    ) -> FinalOperationResult:
+    ) -> AdministrationToolResult:
         """
         Development and debugging tools.
 
@@ -668,7 +668,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
             output_file: Output file for makerc
 
         Returns:
-            FinalOperationResult with debug operation results
+            AdministrationToolResult with debug operation results
         """
         start_time = time.time()
 
@@ -677,7 +677,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
             try:
                 dev_action = DeveloperAction(action)
             except ValueError:
-                return FinalOperationResult(
+                return AdministrationToolResult(
                     status=OperationStatus.FAILURE,
                     error=f"Invalid developer action: {action}",
                     execution_time=time.time() - start_time,
@@ -702,7 +702,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
             elif dev_action == DeveloperAction.TIME_COMMAND:
                 if not command_to_time:
-                    return FinalOperationResult(
+                    return AdministrationToolResult(
                         status=OperationStatus.FAILURE,
                         error="Time requires command to measure",
                         execution_time=time.time() - start_time,
@@ -746,7 +746,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
             elif dev_action == DeveloperAction.DNS and dns_config:
                 dev_info["dns_config"] = dns_config
 
-            return FinalOperationResult(
+            return AdministrationToolResult(
                 status=result.status,
                 data=result.data,
                 error=result.error,
@@ -757,7 +757,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 
         except Exception as e:
             logger.error(f"Developer debug suite error: {e}")
-            return FinalOperationResult(
+            return AdministrationToolResult(
                 status=OperationStatus.FAILURE,
                 error=str(e),
                 execution_time=time.time() - start_time,
@@ -776,7 +776,7 @@ class MSFFinalFiveTools(MSFConsoleStableWrapper):
 # Convenience functions for direct tool access
 async def msf_core_system_manager(**kwargs):
     """Direct access to core system manager."""
-    tools = MSFFinalFiveTools()
+    tools = ConsoleAdministrationTools()
     try:
         await tools.initialize()
         return await tools.msf_core_system_manager(**kwargs)
@@ -786,7 +786,7 @@ async def msf_core_system_manager(**kwargs):
 
 async def msf_advanced_module_controller(**kwargs):
     """Direct access to advanced module controller."""
-    tools = MSFFinalFiveTools()
+    tools = ConsoleAdministrationTools()
     try:
         await tools.initialize()
         return await tools.msf_advanced_module_controller(**kwargs)
@@ -796,7 +796,7 @@ async def msf_advanced_module_controller(**kwargs):
 
 async def msf_job_manager(**kwargs):
     """Direct access to job manager."""
-    tools = MSFFinalFiveTools()
+    tools = ConsoleAdministrationTools()
     try:
         await tools.initialize()
         return await tools.msf_job_manager(**kwargs)
@@ -806,7 +806,7 @@ async def msf_job_manager(**kwargs):
 
 async def msf_database_admin_controller(**kwargs):
     """Direct access to database admin controller."""
-    tools = MSFFinalFiveTools()
+    tools = ConsoleAdministrationTools()
     try:
         await tools.initialize()
         return await tools.msf_database_admin_controller(**kwargs)
@@ -816,7 +816,7 @@ async def msf_database_admin_controller(**kwargs):
 
 async def msf_developer_debug_suite(**kwargs):
     """Direct access to developer debug suite."""
-    tools = MSFFinalFiveTools()
+    tools = ConsoleAdministrationTools()
     try:
         await tools.initialize()
         return await tools.msf_developer_debug_suite(**kwargs)
@@ -832,7 +832,7 @@ if __name__ == "__main__":
         print("🚀 Testing Final Five Tools for 100% MSF Coverage")
         print("=" * 60)
 
-        tools = MSFFinalFiveTools()
+        tools = ConsoleAdministrationTools()
         await tools.initialize()
 
         try:
