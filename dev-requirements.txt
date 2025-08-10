@@ -1,0 +1,6 @@
+coverage[toml]
+pytest-cov
+ruff
+black
+mypy
+safety
