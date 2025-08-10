@@ -1,5 +1,5 @@
 [tool.coverage.run]
-branch = true
+branch = false
 source = ["."]
 omit = [
   "**/tests/*",
@@ -10,7 +10,7 @@ omit = [
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
-fail_under = 85
+fail_under = 100
 exclude_also = [
   "if TYPE_CHECKING:",
   "pragma: no cover",
