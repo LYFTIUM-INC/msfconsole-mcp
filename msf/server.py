@@ -170,6 +170,34 @@ async def get_msf_status(ctx: Context) -> str:
 
 
 @mcp.tool()
+async def get_rpc_status(
+    ctx: Context,
+    host: str = None,
+    port: int = None,
+    ssl: bool = True,
+    username: str = "msf",
+    password: str = None,
+) -> str:
+    await ctx.info("Checking MSF RPC connectivity")
+    try:
+        from .rpc_client import MSFRPCClient
+
+        client = MSFRPCClient(
+            host=host or os.getenv("MSF_RPC_HOST", "127.0.0.1"),
+            port=port or int(os.getenv("MSF_RPC_PORT", "55553")),
+            ssl=ssl,
+            username=username,
+            password=password or os.getenv("MSF_RPC_PASS"),
+        )
+        ok_connect = await client.connect()
+        ok_auth = await client.authenticate() if ok_connect else False
+        return json.dumps({"connected": ok_connect, "authenticated": ok_auth}, indent=2)
+    except Exception as e:
+        logger.error(f"RPC status error: {e}")
+        return json.dumps({"connected": False, "error": str(e)}, indent=2)
+
+
+@mcp.tool()
 async def execute_msf_command(
     ctx: Context, command: str, workspace: str = "default", timeout: int = None
 ) -> str:
