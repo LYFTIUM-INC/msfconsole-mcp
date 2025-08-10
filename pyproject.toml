@@ -1,0 +1,23 @@
+[tool.coverage.run]
+branch = true
+source = ["."]
+omit = [
+  "**/tests/*",
+  "**/.venv/*",
+  "**/.pytest_cache/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 85
+exclude_also = [
+  "if TYPE_CHECKING:",
+  "pragma: no cover",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.black]
+line-length = 100
