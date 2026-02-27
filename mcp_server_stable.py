@@ -963,7 +963,11 @@ class MSFConsoleMCPServer:
     async def _handle_execute_command(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Handle command execution."""
         command = arguments.get("command", "")
+        if not command or not command.strip():
+            return self._error_response("Command is required and must not be empty")
         timeout = arguments.get("timeout")
+        if timeout is not None and (not isinstance(timeout, (int, float)) or timeout <= 0):
+            timeout = None  # Fall back to default
         
         result = await self.msf.execute_command(command, timeout)
         
@@ -985,7 +989,11 @@ class MSFConsoleMCPServer:
     async def _handle_generate_payload(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Handle payload generation."""
         payload = arguments.get("payload", "")
+        if not payload:
+            return self._error_response("Payload name is required")
         options = arguments.get("options", {})
+        if not isinstance(options, dict):
+            return self._error_response("Options must be a dictionary")
         output_format = arguments.get("output_format", "raw")
         encoder = arguments.get("encoder")
         
@@ -1009,6 +1017,8 @@ class MSFConsoleMCPServer:
     async def _handle_search_modules(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Handle module search with pagination."""
         query = arguments.get("query", "")
+        if not query or not query.strip():
+            return self._error_response("Search query is required")
         limit = arguments.get("limit", 25)
         page = arguments.get("page", 1)
         
