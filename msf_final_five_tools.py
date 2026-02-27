@@ -101,12 +101,35 @@ class DeveloperAction(Enum):
     MAKERC = "makerc"
 
 
-@dataclass
 class FinalOperationResult(OperationResult):
     """Extended result for final five tools."""
-    command_executed: Optional[str] = None
-    affected_items: Optional[List[str]] = None
-    system_state: Optional[Dict[str, Any]] = None
+
+    def __init__(
+        self,
+        status=None,
+        data=None,
+        execution_time=0.0,
+        error=None,
+        warnings=None,
+        command_executed=None,
+        affected_items=None,
+        system_state=None,
+        success=None,
+        metadata=None,
+        **kwargs,
+    ):
+        super().__init__(
+            status=status,
+            data=data,
+            execution_time=execution_time,
+            error=error,
+            warnings=warnings,
+            success=success,
+            metadata=metadata,
+        )
+        self.command_executed = command_executed
+        self.affected_items = affected_items
+        self.system_state = system_state
 
 
 class MSFFinalFiveTools(MSFConsoleStableWrapper):

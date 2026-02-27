@@ -1,13 +1,9 @@
 {
   "mcpServers": {
     "msfconsole": {
-      "command": "/home/dell/coding/mcp/msfconsole/venv/bin/python",
-      "args": [
-        "/home/dell/coding/mcp/msfconsole/mcp_server_stable.py"
-      ],
+      "command": "python",
+      "args": ["mcp_server_stable.py"],
       "env": {
-        "PYTHONPATH": "/home/dell/coding/mcp/msfconsole",
-        "METASPLOIT_FRAMEWORK_ROOT": "/usr/share/metasploit-framework",
         "PYTHONUNBUFFERED": "1",
         "LOG_LEVEL": "INFO"
       }

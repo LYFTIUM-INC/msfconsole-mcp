@@ -27,12 +27,51 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("msf_extended_tools")
 
 # Extended result for additional metadata
-@dataclass
 class ExtendedOperationResult(OperationResult):
-    """Extended result with additional metadata"""
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    suggestions: List[str] = field(default_factory=list)
-    pagination: Dict[str, Any] = field(default_factory=dict)
+    """Extended result with additional metadata.
+    
+    Supports two construction styles:
+    1. Canonical: ExtendedOperationResult(status=OperationStatus.SUCCESS, data=..., execution_time=...)
+    2. Convenience: ExtendedOperationResult(success=True, data=..., output=..., error=...)
+    """
+
+    def __init__(
+        self,
+        status=None,
+        data=None,
+        execution_time=0.0,
+        error=None,
+        warnings=None,
+        metadata=None,
+        suggestions=None,
+        pagination=None,
+        # Convenience aliases used by enhanced/ecosystem tools
+        success=None,
+        output=None,
+        extended_data=None,
+        **kwargs,
+    ):
+        if success is not None and status is None:
+            status = OperationStatus.SUCCESS if success else OperationStatus.FAILURE
+        if status is None:
+            status = OperationStatus.FAILURE
+
+        super().__init__(
+            status=status,
+            data=data,
+            execution_time=execution_time,
+            error=error,
+            warnings=warnings,
+        )
+        self.metadata = metadata or {}
+        self.suggestions = suggestions or []
+        self.pagination = pagination or {}
+        self.output = output or ""
+        self.extended_data = extended_data or {}
+
+    @property
+    def success(self) -> bool:
+        return self.status == OperationStatus.SUCCESS
 
 class ModuleAction(Enum):
     """Module manager actions"""

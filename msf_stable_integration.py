@@ -31,13 +31,59 @@ class OperationStatus(Enum):
     TIMEOUT = "timeout"
     PARTIAL = "partial"
 
-@dataclass
 class OperationResult:
-    status: OperationStatus
-    data: Any
-    execution_time: float
-    error: Optional[str] = None
-    warnings: List[str] = None
+    """Result container for MSF operations.
+    
+    Supports two construction styles:
+    1. Canonical: OperationResult(status=OperationStatus.SUCCESS, data=..., execution_time=...)
+    2. Convenience: OperationResult(success=True, data=..., error=...)
+    """
+
+    def __init__(
+        self,
+        status=None,
+        data=None,
+        execution_time=0.0,
+        error=None,
+        warnings=None,
+        # Convenience aliases
+        success=None,
+        metadata=None,
+        **kwargs,
+    ):
+        if success is not None and status is None:
+            status = OperationStatus.SUCCESS if success else OperationStatus.FAILURE
+        if status is None:
+            status = OperationStatus.FAILURE
+
+        self.status = status
+        self.data = data
+        self.execution_time = execution_time
+        self.error = error
+        self.warnings = warnings
+        self.metadata = metadata or {}
+
+    @property
+    def success(self) -> bool:
+        return self.status == OperationStatus.SUCCESS
+
+    @property
+    def output(self) -> str:
+        if hasattr(self, "_output") and self._output:
+            return self._output
+        if isinstance(self.data, dict):
+            return self.data.get("stdout", "")
+        return str(self.data) if self.data else ""
+
+    @output.setter
+    def output(self, value):
+        self._output = value
+
+    def __repr__(self):
+        return (
+            f"OperationResult(status={self.status!r}, data={self.data!r}, "
+            f"execution_time={self.execution_time}, error={self.error!r})"
+        )
 
 class MSFConsoleStableWrapper:
     """Stable, reliable MSFConsole wrapper with enhanced error handling."""
@@ -188,7 +234,7 @@ class MSFConsoleStableWrapper:
                 timeout=5
             )
             return result.returncode == 0
-        except:
+        except (subprocess.SubprocessError, OSError, FileNotFoundError):
             return False
     
     async def _check_system_resources(self) -> bool:
@@ -199,13 +245,12 @@ class MSFConsoleStableWrapper:
             
             # Require at least 2GB free memory and 2 CPU cores
             return memory.available > 2 * 1024 * 1024 * 1024 and cpu_count >= 2
-        except:
+        except (psutil.Error, OSError):
             return False
     
     async def _check_directories(self) -> bool:
         """Check required directories are accessible."""
         try:
-            # Check common MSF directories
             home_dir = Path.home()
             msf_dirs = [
                 home_dir / ".msf4",
@@ -213,22 +258,20 @@ class MSFConsoleStableWrapper:
                 Path("/opt/metasploit-framework")
             ]
             
-            # At least one MSF directory should exist
             return any(path.exists() and path.is_dir() for path in msf_dirs)
-        except:
+        except (OSError, RuntimeError):
             return False
     
     async def _check_network_connectivity(self) -> bool:
         """Check basic network connectivity."""
         try:
-            # Simple ping test
             result = subprocess.run(
                 ["ping", "-c", "1", "-W", "3", "8.8.8.8"],
                 capture_output=True,
                 timeout=5
             )
             return result.returncode == 0
-        except:
+        except (subprocess.SubprocessError, OSError, FileNotFoundError):
             return True  # Don't fail initialization for network issues
     
     async def _attempt_standard_initialization(self) -> bool:
@@ -789,7 +832,7 @@ class MSFConsoleStableWrapper:
                 # Validate it's a real module (has proper path structure)
                 if '/' in module_name and module_name.count('/') >= 2:
                     # Ensure it's not a target or AKA line
-                    if not (line.strip().startswith('\\\_') or 'target:' in line):
+                    if not (line.strip().startswith('\\_') or 'target:' in line):
                         
                         # Limit description length to prevent token overflow
                         if len(description) > 80:
@@ -818,7 +861,7 @@ class MSFConsoleStableWrapper:
                 line = line.strip()
                 
                 # Look for any line containing a module path
-                if ('exploit/' in line or 'auxiliary/' in line or 'post/' in line) and not line.startswith('\\\_'):
+                if ('exploit/' in line or 'auxiliary/' in line or 'post/' in line) and not line.startswith('\\_'):
                     # Try to extract just the module name and description
                     parts = line.split()
                     for i, part in enumerate(parts):

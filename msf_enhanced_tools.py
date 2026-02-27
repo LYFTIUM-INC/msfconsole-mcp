@@ -706,21 +706,28 @@ class MSFEnhancedTools(MSFConsoleStableWrapper):
     
     def _parse_routes(self, output: str) -> List[Dict[str, Any]]:
         """Parse route list from MSF output"""
+        import re
         routes = []
         lines = output.strip().split('\n')
-        
+        skip_patterns = ['Subnet', '===', '---', 'Routing', 'Table', 'Netmask', 'Gateway']
+
         for line in lines:
-            if 'Subnet' in line or '===' in line or not line.strip():
+            stripped = line.strip()
+            if not stripped:
                 continue
-                
-            parts = line.split()
-            if len(parts) >= 3:
+            if any(pat in stripped for pat in skip_patterns):
+                continue
+            if re.match(r'^[\-=\s]+$', stripped):
+                continue
+
+            parts = stripped.split()
+            if len(parts) >= 3 and re.match(r'\d+\.\d+\.\d+\.\d+', parts[0]):
                 routes.append({
                     "subnet": parts[0],
                     "netmask": parts[1],
-                    "gateway": parts[2]
+                    "gateway": " ".join(parts[2:]),
                 })
-                
+
         return routes
     
     async def _get_current_workspace(self) -> str:

@@ -47,12 +47,16 @@ class MSFConsoleMCPServer:
         self.initialized = False
         self.server_info = {
             "name": "msfconsole-complete",
-            "version": "5.0.0",
-            "description": "Complete MSF ecosystem MCP server with 95%+ coverage (58 tools)",
-            "tools_count": 58,
+            "version": "5.1.0",
+            "description": "Complete MSF ecosystem MCP server with 48 specialized tools",
+            "tools_count": 48,
             "coverage": "95%+",
-            "ecosystem_tools": 9,
-            "new_capabilities": ["msfvenom direct", "database direct", "RPC interface", "advanced evasion", "reporting"]
+            "capabilities": [
+                "command execution", "payload generation", "module management",
+                "session management", "database operations", "exploit chains",
+                "post-exploitation", "scanning", "credential management",
+                "pivoting", "reporting", "plugin system", "evasion",
+            ],
         }
     
     async def initialize(self):
@@ -121,7 +125,7 @@ class MSFConsoleMCPServer:
                 logger.warning(f"Advanced session features partial: {session_mgr_result.error}")
             
             self.initialized = True
-            logger.info("Complete MSF Ecosystem MCP server v5.0 initialized successfully (58 tools - 95%+ coverage)")
+            logger.info("MSF Console MCP server v5.1 initialized successfully (48 tools)")
             return True
             
         return True
@@ -734,7 +738,7 @@ class MSFConsoleMCPServer:
                     "properties": {
                         "host": {"type": "string", "description": "Target host"},
                         "port": {"type": "integer", "default": 0, "description": "Target port"},
-                        "ssl": {"type": "boolean", "default": false, "description": "Use SSL"},
+                        "ssl": {"type": "boolean", "default": False, "description": "Use SSL"},
                         "proxies": {"type": "string", "description": "Proxy configuration"},
                         "timeout": {"type": "integer", "default": 30, "description": "Connection timeout"}
                     },
@@ -776,8 +780,8 @@ class MSFConsoleMCPServer:
                         "command": {"type": "string", "description": "Command to filter"},
                         "before": {"type": "integer", "default": 0, "description": "Lines before match"},
                         "after": {"type": "integer", "default": 0, "description": "Lines after match"},
-                        "invert": {"type": "boolean", "default": false, "description": "Invert match"},
-                        "case_sensitive": {"type": "boolean", "default": true, "description": "Case sensitive search"}
+                        "invert": {"type": "boolean", "default": False, "description": "Invert match"},
+                        "case_sensitive": {"type": "boolean", "default": True, "description": "Case sensitive search"}
                     },
                     "required": ["pattern", "command"]
                 }
@@ -831,7 +835,7 @@ class MSFConsoleMCPServer:
                         "group": {"type": "string", "description": "Session group name"},
                         "command": {"type": "string", "description": "Command to execute"},
                         "script": {"type": "string", "description": "Script to run"},
-                        "parallel": {"type": "boolean", "default": true, "description": "Execute in parallel"},
+                        "parallel": {"type": "boolean", "default": True, "description": "Execute in parallel"},
                         "timeout": {"type": "integer", "default": 60, "description": "Operation timeout"}
                     },
                     "required": ["action"]
@@ -867,6 +871,21 @@ class MSFConsoleMCPServer:
             },
         ]
     
+    @staticmethod
+    def _error_response(message: str) -> Dict[str, Any]:
+        """Create a standardized error response."""
+        return {
+            "content": [
+                {
+                    "type": "text",
+                    "text": json.dumps({
+                        "success": False,
+                        "error": message,
+                    }, indent=2),
+                }
+            ]
+        }
+
     async def handle_tool_call(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Handle MCP tool calls."""
         if not self.initialized:
@@ -944,7 +963,11 @@ class MSFConsoleMCPServer:
     async def _handle_execute_command(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Handle command execution."""
         command = arguments.get("command", "")
+        if not command or not command.strip():
+            return self._error_response("Command is required and must not be empty")
         timeout = arguments.get("timeout")
+        if timeout is not None and (not isinstance(timeout, (int, float)) or timeout <= 0):
+            timeout = None  # Fall back to default
         
         result = await self.msf.execute_command(command, timeout)
         
@@ -966,7 +989,11 @@ class MSFConsoleMCPServer:
     async def _handle_generate_payload(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Handle payload generation."""
         payload = arguments.get("payload", "")
+        if not payload:
+            return self._error_response("Payload name is required")
         options = arguments.get("options", {})
+        if not isinstance(options, dict):
+            return self._error_response("Options must be a dictionary")
         output_format = arguments.get("output_format", "raw")
         encoder = arguments.get("encoder")
         
@@ -990,6 +1017,8 @@ class MSFConsoleMCPServer:
     async def _handle_search_modules(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Handle module search with pagination."""
         query = arguments.get("query", "")
+        if not query or not query.strip():
+            return self._error_response("Search query is required")
         limit = arguments.get("limit", 25)
         page = arguments.get("page", 1)
         
@@ -1052,9 +1081,18 @@ class MSFConsoleMCPServer:
             ]
         }
     
+    @staticmethod
+    def _sanitize_name(name: str) -> str:
+        """Sanitize a workspace or other user-provided name for safe shell usage."""
+        import re
+        sanitized = re.sub(r'[^a-zA-Z0-9_\-.]', '', name)
+        return sanitized[:64]
+
     async def _handle_create_workspace(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Handle workspace creation."""
-        name = arguments.get("name", "")
+        name = self._sanitize_name(arguments.get("name", ""))
+        if not name:
+            return self._error_response("Workspace name is required and must contain valid characters")
         command = f"workspace -a {name}"
         
         result = await self.msf.execute_command(command)
@@ -1076,7 +1114,9 @@ class MSFConsoleMCPServer:
     
     async def _handle_switch_workspace(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Handle workspace switching."""
-        name = arguments.get("name", "")
+        name = self._sanitize_name(arguments.get("name", ""))
+        if not name:
+            return self._error_response("Workspace name is required")
         command = f"workspace {name}"
         
         result = await self.msf.execute_command(command)
@@ -1345,17 +1385,18 @@ class MSFConsoleMCPServer:
         return {"content": [{"type": "text", "text": json.dumps(response_data, indent=2)}]}
     
     async def cleanup(self):
-        """Clean up resources."""
-        if self.msf:
-            await self.msf.cleanup()
-        if self.extended_msf:
-            await self.extended_msf.cleanup()
-        if self.final_msf:
-            await self.final_msf.cleanup()
-        if self.ecosystem_msf:
-            await self.ecosystem_msf.cleanup()
-        if self.advanced_msf:
-            await self.advanced_msf.cleanup()
+        """Clean up all resources."""
+        wrappers = [
+            self.msf, self.extended_msf, self.final_msf,
+            self.ecosystem_msf, self.advanced_msf,
+            self.enhanced_msf, self.session_manager,
+        ]
+        for wrapper in wrappers:
+            if wrapper:
+                try:
+                    await wrapper.cleanup()
+                except Exception as e:
+                    logger.warning(f"Cleanup error for {type(wrapper).__name__}: {e}")
 
 # MCP Protocol Implementation
 async def handle_mcp_request(request: Dict[str, Any], server: MSFConsoleMCPServer) -> Dict[str, Any]:
@@ -1397,6 +1438,12 @@ async def handle_mcp_request(request: Dict[str, Any], server: MSFConsoleMCPServe
                 "result": result
             }
         
+        elif method == "notifications/initialized":
+            return None
+
+        elif method.startswith("notifications/"):
+            return None
+
         else:
             return {
                 "jsonrpc": "2.0",
@@ -1441,8 +1488,8 @@ async def main():
                     request = json.loads(line.strip())
                     response = await handle_mcp_request(request, server)
                     
-                    # Write response to stdout
-                    print(json.dumps(response), flush=True)
+                    if response is not None:
+                        print(json.dumps(response), flush=True)
                     
                 except json.JSONDecodeError as e:
                     logger.error(f"Invalid JSON received: {e}")
