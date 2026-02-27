@@ -68,8 +68,7 @@ class ToolTester:
                 try:
                     data = json.loads(content)
                     success = data.get("success", True) and not data.get("error")
-                except:
-                    # For non-JSON responses, check for error indicators
+                except (json.JSONDecodeError, ValueError, KeyError):
                     success = "error" not in content.lower() and "failed" not in content.lower()
                 
                 if success:

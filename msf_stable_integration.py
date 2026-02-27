@@ -234,7 +234,7 @@ class MSFConsoleStableWrapper:
                 timeout=5
             )
             return result.returncode == 0
-        except:
+        except (subprocess.SubprocessError, OSError, FileNotFoundError):
             return False
     
     async def _check_system_resources(self) -> bool:
@@ -245,13 +245,12 @@ class MSFConsoleStableWrapper:
             
             # Require at least 2GB free memory and 2 CPU cores
             return memory.available > 2 * 1024 * 1024 * 1024 and cpu_count >= 2
-        except:
+        except (psutil.Error, OSError):
             return False
     
     async def _check_directories(self) -> bool:
         """Check required directories are accessible."""
         try:
-            # Check common MSF directories
             home_dir = Path.home()
             msf_dirs = [
                 home_dir / ".msf4",
@@ -259,22 +258,20 @@ class MSFConsoleStableWrapper:
                 Path("/opt/metasploit-framework")
             ]
             
-            # At least one MSF directory should exist
             return any(path.exists() and path.is_dir() for path in msf_dirs)
-        except:
+        except (OSError, RuntimeError):
             return False
     
     async def _check_network_connectivity(self) -> bool:
         """Check basic network connectivity."""
         try:
-            # Simple ping test
             result = subprocess.run(
                 ["ping", "-c", "1", "-W", "3", "8.8.8.8"],
                 capture_output=True,
                 timeout=5
             )
             return result.returncode == 0
-        except:
+        except (subprocess.SubprocessError, OSError, FileNotFoundError):
             return True  # Don't fail initialization for network issues
     
     async def _attempt_standard_initialization(self) -> bool:
