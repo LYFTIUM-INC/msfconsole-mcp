@@ -22,13 +22,41 @@ from msf_stable_integration import MSFConsoleStableWrapper as MSFBaseTools, Oper
 logger = logging.getLogger(__name__)
 
 
-@dataclass
 class AdvancedResult(OperationResult):
     """Extended result structure for advanced tools."""
-    tool_name: str = None
-    generated_files: List[str] = None
-    output_file: Optional[str] = None
-    configuration: Optional[Dict] = None
+
+    def __init__(
+        self,
+        status=None,
+        data=None,
+        execution_time=0.0,
+        error=None,
+        warnings=None,
+        tool_name=None,
+        generated_files=None,
+        output_file=None,
+        configuration=None,
+        success=None,
+        metadata=None,
+        artifacts=None,
+        performance_metrics=None,
+        **kwargs,
+    ):
+        super().__init__(
+            status=status,
+            data=data,
+            execution_time=execution_time,
+            error=error,
+            warnings=warnings,
+            success=success,
+            metadata=metadata,
+        )
+        self.tool_name = tool_name
+        self.generated_files = generated_files or []
+        self.output_file = output_file
+        self.configuration = configuration
+        self.artifacts = artifacts or []
+        self.performance_metrics = performance_metrics or {}
 
 
 class MSFAdvancedTools(MSFBaseTools):

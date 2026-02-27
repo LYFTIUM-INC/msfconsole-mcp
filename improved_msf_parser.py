@@ -85,16 +85,24 @@ class ImprovedMSFParser:
         for pattern in self.patterns["workspace_list"]:
             if re.search(pattern, output, re.IGNORECASE | re.MULTILINE):
                 return OutputType.LIST
+
+        # Check for info blocks before tables since module info contains
+        # embedded tables but should be parsed as a whole info block
+        info_matches = sum(
+            1 for p in self.patterns["info_block"]
+            if re.search(p, output, re.MULTILINE)
+        )
+        if info_matches >= 2:
+            return OutputType.INFO_BLOCK
         
         # Check for tables
         for pattern in self.patterns["table"]:
             if re.search(pattern, output, re.MULTILINE):
                 return OutputType.TABLE
         
-        # Check for info blocks
-        for pattern in self.patterns["info_block"]:
-            if re.search(pattern, output, re.MULTILINE):
-                return OutputType.INFO_BLOCK
+        # Single info block pattern match
+        if info_matches == 1:
+            return OutputType.INFO_BLOCK
         
         # Default to raw
         return OutputType.RAW

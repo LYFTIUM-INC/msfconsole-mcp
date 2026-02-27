@@ -734,7 +734,7 @@ class MSFConsoleMCPServer:
                     "properties": {
                         "host": {"type": "string", "description": "Target host"},
                         "port": {"type": "integer", "default": 0, "description": "Target port"},
-                        "ssl": {"type": "boolean", "default": false, "description": "Use SSL"},
+                        "ssl": {"type": "boolean", "default": False, "description": "Use SSL"},
                         "proxies": {"type": "string", "description": "Proxy configuration"},
                         "timeout": {"type": "integer", "default": 30, "description": "Connection timeout"}
                     },
@@ -776,8 +776,8 @@ class MSFConsoleMCPServer:
                         "command": {"type": "string", "description": "Command to filter"},
                         "before": {"type": "integer", "default": 0, "description": "Lines before match"},
                         "after": {"type": "integer", "default": 0, "description": "Lines after match"},
-                        "invert": {"type": "boolean", "default": false, "description": "Invert match"},
-                        "case_sensitive": {"type": "boolean", "default": true, "description": "Case sensitive search"}
+                        "invert": {"type": "boolean", "default": False, "description": "Invert match"},
+                        "case_sensitive": {"type": "boolean", "default": True, "description": "Case sensitive search"}
                     },
                     "required": ["pattern", "command"]
                 }
@@ -831,7 +831,7 @@ class MSFConsoleMCPServer:
                         "group": {"type": "string", "description": "Session group name"},
                         "command": {"type": "string", "description": "Command to execute"},
                         "script": {"type": "string", "description": "Script to run"},
-                        "parallel": {"type": "boolean", "default": true, "description": "Execute in parallel"},
+                        "parallel": {"type": "boolean", "default": True, "description": "Execute in parallel"},
                         "timeout": {"type": "integer", "default": 60, "description": "Operation timeout"}
                     },
                     "required": ["action"]

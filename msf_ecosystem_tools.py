@@ -133,10 +133,33 @@ class EvasionTechnique(Enum):
 @dataclass
 class EcosystemResult(OperationResult):
     """Extended result for ecosystem tools."""
-    tool_name: Optional[str] = None
-    output_file: Optional[str] = None
-    artifacts: Optional[List[str]] = None
-    metadata: Optional[Dict[str, Any]] = None
+
+    def __init__(
+        self,
+        status=None,
+        data=None,
+        execution_time=0.0,
+        error=None,
+        warnings=None,
+        tool_name=None,
+        output_file=None,
+        artifacts=None,
+        metadata=None,
+        success=None,
+        **kwargs,
+    ):
+        super().__init__(
+            status=status,
+            data=data,
+            execution_time=execution_time,
+            error=error,
+            warnings=warnings,
+            success=success,
+            metadata=metadata,
+        )
+        self.tool_name = tool_name
+        self.output_file = output_file
+        self.artifacts = artifacts or []
 
 
 class MSFEcosystemTools(MSFConsoleStableWrapper):
