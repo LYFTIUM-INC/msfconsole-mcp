@@ -73,4 +73,8 @@ improved_msf_parser.py
 msfconsole_mcp_enhanced.py
 
 # Configuration (keep only essential)
-.mcp.json
+.mcp.json.coverage
+__pycache__/
+*.pyc
+.pytest_cache/
+test_report_*.json
